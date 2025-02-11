@@ -33,9 +33,11 @@ private:
     COMMAND mMode;
     const int TXD2 = 17;
     const int RXD2 = 16;
-    const int BAUND_RATE = 9600;
+    const int BAUND_RATE = 115200;
 
     void handleMessage(String receiverData);
+
+    std::map<COMMAND, String> mCommandHandle;
 };
 
 #endif // SERIAL_PARTNER_H

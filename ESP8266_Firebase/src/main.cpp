@@ -3,7 +3,7 @@
 Processor *processor = new Processor();
 
 void setup() {
-
+  processor->init();
 }
 
 void loop() {

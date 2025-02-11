@@ -18,7 +18,6 @@ Light::Light(RemoteLight *rml) : mRML(rml)
 
 Light::~Light()
 {
-	delete mRML;
 }
 
 void Light::handleSignal(const SignaLType signal, Package *data)

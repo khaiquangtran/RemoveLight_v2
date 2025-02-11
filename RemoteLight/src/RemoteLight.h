@@ -35,14 +35,13 @@ private:
 		CHECK_CONNECT_WIFI,
 	};
 
+	std::shared_ptr<Hardware> mSERIAL;
 	std::shared_ptr<Hardware> mRTC;
 	std::shared_ptr<Hardware> mIR;
 	std::shared_ptr<Hardware> mLCD;
 	std::shared_ptr<Hardware> mBTN;
 	std::shared_ptr<Hardware> mLIGHT;
-	std::shared_ptr<Hardware> mSERIAL;
 
-	std::map<int, BUTTON_VALUE> mSerialMapTesting;
 	CONTROL_MODE mControlMode;
 
 	UL mNow;
@@ -66,6 +65,15 @@ private:
 	void displaySetupMode();
 	void displayEndSetupMode();
 
+	enum STATE_CONNECT : uint8_t
+	{
+		NONE = 0U,
+		WIFI,
+		FIREBASE,
+		NTP,
+	};
+
+	STATE_CONNECT mStateConnect;
 };
 
 #endif // ! REMOTE_LIGHT_H

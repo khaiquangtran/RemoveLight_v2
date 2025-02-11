@@ -3,8 +3,11 @@
 
 #include <Arduino.h>
 #include <SoftwareSerial.h>
-// #include "./Processor.h"
+#include "./Processor.h"
 #include "./Package.h"
+#include "./Logging.h"
+#include "SignalType.h"
+#include <map>
 
 class Processor;
 
@@ -27,14 +30,23 @@ enum CONTROL_MODE {
     PASSWORD,
 };
 
+enum COMMAND {
+    STATUS_WIFI,
+    STATUS_FIREBASE,
+    STATUS_NTP
+};
+
 private:
 	Processor *mProcessor;
     SoftwareSerial *Serial2;
     const int TXD2 = 5; // D1
     const int RXD2 = 4; // D2
     const int BAUND_RATE = 9600;
+    const int BAUND_RATE_2 = 115200;
 
     void handleMessage(String receiverData);
+
+    std::map<COMMAND, String> mCommandHandle;
 };
 
 #endif // SERIAL_PARTNER_H

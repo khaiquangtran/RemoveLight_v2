@@ -64,7 +64,6 @@ retry:
 LCD16x2::~LCD16x2()
 {
 	delete mLCD;
-	delete mRML;
 	delete[] DAY[0];
 	delete[] DAY[1];
 	delete[] DAY[2];
@@ -168,6 +167,11 @@ void LCD16x2::handleSignal(const SignaLType signal, Package *data)
 		case (SignaLType::LCD_DISPLAY_START_CONNECT_FIREBASE):
 		{
 			displayStartConnectFirebase();
+			break;
+		}
+		case (SignaLType::LCD_DISPLAY_START_CONNECT_NTP):
+		{
+			displayStartConnectNTP();
 			break;
 		}
 		case (SignaLType::LCD_CONNECT_FIREBASE_SUCCESS):
@@ -381,6 +385,13 @@ void LCD16x2::displayStartConnectFirebase()
 {
 	mLCD->setCursor(0,0);
 	mLCD->print("Connecting FB    ");
+	mLCD->setCursor(0,1);
+}
+
+void LCD16x2::displayStartConnectNTP()
+{
+	mLCD->setCursor(0,0);
+	mLCD->print("Connecting NTP   ");
 	mLCD->setCursor(0,1);
 }
 

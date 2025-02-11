@@ -10,7 +10,6 @@ Button::Button(RemoteLight *rml) : mRML(rml)
 
 Button::~Button()
 {
-  delete mRML;
 }
 
 void Button::handleSignal(const SignaLType signal, Package *data)

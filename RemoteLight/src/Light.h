@@ -20,8 +20,8 @@ private:
   void controlLight(uint8_t light);
 
   RemoteLight *mRML;
-  const uint8_t Light1 = 19U;
-  const uint8_t Light2 = 18U;
+  const uint8_t Light1 = 18U;
+  const uint8_t Light2 = 19U;
   const uint8_t Light3 = 5U;
   const uint8_t Light4 = 4U;
   std::map<uint8_t, bool> mListLight;

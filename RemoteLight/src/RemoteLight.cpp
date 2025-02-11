@@ -2,35 +2,16 @@
 
 RemoteLight::RemoteLight()
 {
-	Wire.begin();
-
-	LOGI("Initialization RemoteLight!");
-
+	mSERIAL = std::make_shared<SerialPartner>(this);
 	mRTC = std::make_shared<RTC>(this);
 	mIR = std::make_shared<IRRemotePartner>(this);
 	mLCD = std::make_shared<LCD16x2>(this);
 	mBTN = std::make_shared<Button>(this);
 	mLIGHT = std::make_shared<Light>(this);
-	mSERIAL = std::make_shared<SerialPartner>(this);
-
-	mSerialMapTesting[49] = BUTTON_VALUE::BUTTON_1;		 // 1
-	mSerialMapTesting[50] = BUTTON_VALUE::BUTTON_2;		 // 2
-	mSerialMapTesting[51] = BUTTON_VALUE::BUTTON_3;		 // 3
-	mSerialMapTesting[52] = BUTTON_VALUE::BUTTON_4;		 // 4
-	mSerialMapTesting[53] = BUTTON_VALUE::BUTTON_5;		 // 5
-	mSerialMapTesting[54] = BUTTON_VALUE::BUTTON_6;		 // 6
-	mSerialMapTesting[119] = BUTTON_VALUE::BUTTON_UP;	 // w
-	mSerialMapTesting[115] = BUTTON_VALUE::BUTTON_DOWN;	 // s
-	mSerialMapTesting[97] = BUTTON_VALUE::BUTTON_LEFT;	 // a
-	mSerialMapTesting[100] = BUTTON_VALUE::BUTTON_RIGHT; // d
-	mSerialMapTesting[113] = BUTTON_VALUE::BUTTON_MENU;	 // q
-	mSerialMapTesting[101] = BUTTON_VALUE::BUTTON_APP;	 // e
-	mSerialMapTesting[122] = BUTTON_VALUE::BUTTON_BACK;	 // z
-	mSerialMapTesting[120] = BUTTON_VALUE::BUTTON_OK;	 // x
 
 	mTimerList["DisplayTimeAll"] = std::make_pair(0U, std::make_pair(DURATION_TIMER_1S, std::make_pair(0U, NUMBER_30S)));
 	mTimerList["DisplaySetUpMode"] = std::make_pair(0U, std::make_pair(DURATION_TIMER_1S, std::make_pair(0U, 0U)));
-	mTimerList["CheckConnectWifi"] = std::make_pair(0U, std::make_pair(DURATION_TIMER_1S, std::make_pair(0U, NUMBER_10S)));
+	mTimerList["CheckConnectWifi"] = std::make_pair(0U, std::make_pair(DURATION_TIMER_3S, std::make_pair(0U, NUMBER_10S)));
 
 	mControlMode = CONTROL_MODE::NONE;
 	mNow = 0U;
@@ -40,7 +21,9 @@ RemoteLight::RemoteLight()
 	mFlagStatusFirebase = -1;
 	mFlagStatusNTP = -1;
 	mCounter = 0U;
+	mStateConnect = STATE_CONNECT::NONE;
 
+	LOGI("Initialization RemoteLight!");
 }
 
 RemoteLight::~RemoteLight()
@@ -52,6 +35,7 @@ void RemoteLight::init()
 	mControlMode = CONTROL_MODE::CHECK_CONNECT_WIFI;
 	mLCD->handleSignal(SignaLType::LCD_DISPLAY_START_CONNECT_WIFI);
 	mTimerList["CheckConnectWifi"].first = millis();
+	mStateConnect = STATE_CONNECT::WIFI;
 }
 
 void RemoteLight::handleSignal(const SignaLType signal, Package *data)
@@ -203,12 +187,14 @@ void RemoteLight::handleSignal(const SignaLType signal, Package *data)
 		delay(1000);
 		mLCD->handleSignal(SignaLType::LCD_CLEAR_SCREEN);
 		mLCD->handleSignal(SignaLType::LCD_DISPLAY_START_CONNECT_FIREBASE);
+		mStateConnect = STATE_CONNECT::FIREBASE;
 		mTimerList["CheckConnectWifi"].second.second.first = 0U;
 		mTimerList["CheckConnectWifi"].first = millis();
 		break;
 	}
 	case (SignaLType::REMOTE_LIGHT_CONNECT_WIFI_FAILED):
 	{
+		LOGW("Set mFlagStatusWifi = 0");
 		mFlagStatusWifi = 0;
 		break;
 	}
@@ -219,12 +205,14 @@ void RemoteLight::handleSignal(const SignaLType signal, Package *data)
 		delay(1000);
 		mLCD->handleSignal(SignaLType::LCD_CLEAR_SCREEN);
 		mLCD->handleSignal(SignaLType::LCD_DISPLAY_START_CONNECT_NTP);
+		mStateConnect = STATE_CONNECT::NTP;
 		mTimerList["CheckConnectWifi"].second.second.first = 0U;
 		mTimerList["CheckConnectWifi"].first = millis();
 		break;
 	}
 	case (SignaLType::REMOTE_LIGHT_CONNECT_FIREBASE_FAILED):
 	{
+		LOGW("Set mFlagStatusFirebase = 0");
 		mFlagStatusFirebase = 0;
 		break;
 	}
@@ -236,10 +224,13 @@ void RemoteLight::handleSignal(const SignaLType signal, Package *data)
 		mLCD->handleSignal(SignaLType::LCD_CLEAR_SCREEN);
 		mTimerList["CheckConnectWifi"].second.second.first = 0U;
 		mTimerList["CheckConnectWifi"].first = millis();
+		mStateConnect = STATE_CONNECT::NONE;
+		mControlMode = CONTROL_MODE::DISPLAY_ALL;
 		break;
 	}
 	case (SignaLType::REMOTE_LIGHT_CONNECT_NTP_FAILED):
 	{
+		LOGW("Set mFlagStatusNTP = 0");
 		mFlagStatusNTP = 0;
 		break;
 	}
@@ -254,30 +245,30 @@ void RemoteLight::handleSignal(const SignaLType signal, Package *data)
 void RemoteLight::run()
 {
 	mSERIAL->listenning();
+	mIR->listenning();
+	mBTN->listenning();
 
-	// mBTN->listenning();
-
-	// switch (mControlMode)
-	// {
-	// case (CONTROL_MODE::CHECK_CONNECT_WIFI): {
-	// 	connectWifiMode();
-	// 	break;
-	// }
-	// case (CONTROL_MODE::DISPLAY_ALL): {
-	// 	displayAllTime();
-	// 	break;
-	// }
-	// case (CONTROL_MODE::SETUP_MODE): {
-	// 	displaySetupMode();
-	// 	break;
-	// }
-	// case (CONTROL_MODE::END_SETUP_MODE): {
-	// 	displayEndSetupMode();
-	// 	break;
-	// }
-	// default:
-	// 	break;
-	// }
+	switch (mControlMode)
+	{
+	case (CONTROL_MODE::CHECK_CONNECT_WIFI): {
+		connectWifiMode();
+		break;
+	}
+	case (CONTROL_MODE::DISPLAY_ALL): {
+		displayAllTime();
+		break;
+	}
+	case (CONTROL_MODE::SETUP_MODE): {
+		displaySetupMode();
+		break;
+	}
+	case (CONTROL_MODE::END_SETUP_MODE): {
+		displayEndSetupMode();
+		break;
+	}
+	default:
+		break;
+	}
 
 	// delay(20);
 }
@@ -290,17 +281,21 @@ void RemoteLight::connectWifiMode()
 	mElapsed = mNow - timer.first;
 	if (mElapsed > timer.second.first)
 	{
-		if(mFlagStatusWifi == -1 || mFlagStatusWifi == 0)
+		if ((mFlagStatusWifi == -1 || mFlagStatusWifi == 0) && mStateConnect == STATE_CONNECT::WIFI)
 		{
 			mSERIAL->handleSignal(SignaLType::SERIAL_CHECK_STATUS_WIFI);
 		}
-		else if(mFlagStatusFirebase == -1 || mFlagStatusFirebase == 0)
+		else if ((mFlagStatusFirebase == -1 || mFlagStatusFirebase == 0) && mStateConnect == STATE_CONNECT::FIREBASE)
 		{
 			mSERIAL->handleSignal(SignaLType::SERIAL_CHECK_STATUS_FIREBASE);
 		}
-		else if(mFlagStatusNTP == -1)
+		else if ((mFlagStatusNTP == -1 || mFlagStatusNTP == 0) && mStateConnect == STATE_CONNECT::NTP)
 		{
 			mSERIAL->handleSignal(SignaLType::SERIAL_CHECK_STATUS_NTP);
+		}
+		else
+		{
+			// Do nothing
 		}
 
 		mLCD->handleSignal(SignaLType::LCD_DISPLAY_CONNECT_WIFI);
@@ -309,43 +304,38 @@ void RemoteLight::connectWifiMode()
 		timer.second.second.first += 1;
 		if (timer.second.second.first > timer.second.second.second)
 		{
-			if(mFlagStatusWifi == -1 || mFlagStatusWifi == 0)
+			if ((mFlagStatusWifi == -1 || mFlagStatusWifi == 0) && mStateConnect == STATE_CONNECT::WIFI)
 			{
-				LOGI("Timeout, Wifi connect failed");
+				LOGW("Timeout, Wifi connection failed. Cannot continue");
 				mLCD->handleSignal(SignaLType::LCD_CONNECT_WIFI_FAILED);
 				delay(1000);
 				mLCD->handleSignal(SignaLType::LCD_CLEAR_SCREEN);
 				timer.second.second.first = 0U;
 				mControlMode = CONTROL_MODE::DISPLAY_ALL;
+				mStateConnect = STATE_CONNECT::NONE;
 			}
-			if(mFlagStatusFirebase == -1 || mFlagStatusFirebase == 0)
+			if ((mFlagStatusFirebase == -1 || mFlagStatusFirebase == 0) && mStateConnect == STATE_CONNECT::FIREBASE)
 			{
-				LOGI("Timeout, Firebase connect failed");
+				LOGW("Timeout, Firebase connection failed");
 				mLCD->handleSignal(SignaLType::LCD_CONNECT_FIREBASE_FAILED);
 				delay(1000);
 				mLCD->handleSignal(SignaLType::LCD_CLEAR_SCREEN);
+				mLCD->handleSignal(SignaLType::LCD_DISPLAY_START_CONNECT_NTP);
 				timer.first = millis();
 				timer.second.second.first = 0U;
+				mStateConnect = STATE_CONNECT::NTP;
 			}
-			if(mFlagStatusNTP == -1 || mFlagStatusNTP == 0)
+			else if ((mFlagStatusNTP == -1 || mFlagStatusNTP == 0) && mStateConnect == STATE_CONNECT::NTP)
 			{
-				LOGI("Timeout, NTP connect failed");
+				LOGW("Timeout, NTP connection failed");
 				mLCD->handleSignal(SignaLType::LCD_CONNECT_NTP_FAILED);
 				delay(1000);
 				mLCD->handleSignal(SignaLType::LCD_CLEAR_SCREEN);
 				timer.first = millis();
 				timer.second.second.first = 0U;
+				mControlMode = CONTROL_MODE::DISPLAY_ALL;
+				mStateConnect = STATE_CONNECT::NONE;
 			}
-		}
-		else if (mFlagStatusWifi == 1)
-		{
-			LOGI("Wifi connect successfully");
-			mLCD->handleSignal(SignaLType::LCD_CONNECT_WIFI_SUCCESS);
-			timer.second.second.first = 0U;
-		}
-		else
-		{
-			// Do nothing
 		}
 	}
 }

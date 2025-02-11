@@ -30,6 +30,7 @@ private:
   void displayConnectWifiFailed();
   void displayStartConnectFirebase();
   void displayConnectFirebaseSuccess();
+  void displayStartConnectNTP();
   void displayConnectNTPSuccess();
   void displayConnectFBFailed();
   void displayConnectNTPFailed();

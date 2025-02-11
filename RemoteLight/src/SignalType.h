@@ -1,5 +1,5 @@
-#ifndef PARAMDEF_H
-#define PARAMDEF_H
+#ifndef SIGNALTYPE_H
+#define SIGNALTYPE_H
 
 enum SignaLType : uint16_t
 {
@@ -70,11 +70,10 @@ enum SignaLType : uint16_t
     REMOTE_LIGHT_CONNECT_NTP_SUCCESS,
     REMOTE_LIGHT_CONNECT_NTP_FAILED,
 
-
     SERIAL_SIGNAL               = 6000,
     SERIAL_CHECK_STATUS_WIFI,
     SERIAL_CHECK_STATUS_FIREBASE,
     SERIAL_CHECK_STATUS_NTP,
 };
 
-#endif // PARAMDEF_H
+#endif // SIGNALTYPE_H

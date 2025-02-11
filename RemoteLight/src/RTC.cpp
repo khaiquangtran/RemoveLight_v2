@@ -3,6 +3,9 @@
 RTC::RTC(RemoteLight *rml) : mRML(rml)
 {
 	LOGI("Initialization RTC!");
+
+	Wire.begin();
+
 	mTimeOfLight["Light1"] = std::make_pair(
 		std::make_pair(REG_TIME_LIGHT{LIGHT1::ON_SWITCH, LIGHT1::ON_HOUR, LIGHT1::ON_MINUTE, LIGHT1::ON_SECOND}, TimeOfLight{0U, 0U, 0U, 0U}),
 		std::make_pair(REG_TIME_LIGHT{LIGHT1::OFF_SWITCH, LIGHT1::OFF_HOUR, LIGHT1::OFF_MINUTE, LIGHT1::OFF_SECOND}, TimeOfLight{0U, 0U, 0U, 0U}));
@@ -46,7 +49,6 @@ retry:
 
 RTC::~RTC()
 {
-	delete mRML;
 }
 
 void RTC::handleSignal(const SignaLType signal, Package *data)

@@ -14,13 +14,14 @@ public:
   IRRemotePartner(const IRRemotePartner &) = delete;
   IRRemotePartner &operator=(const IRRemotePartner &) = delete;
 
-  void listenning(BUTTON_VALUE value);
+  void listenning();
 
   void handleSignal(const SignaLType signal, Package *data = nullptr);
 
 private:
   RemoteLight *mRML;
   const uint_fast8_t pinIR = 26U;
+
 };
 
 #endif // IR_REMOTE_PARTNER_H

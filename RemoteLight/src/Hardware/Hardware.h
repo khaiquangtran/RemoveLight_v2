@@ -4,10 +4,10 @@
 #include <map>
 #include <Wire.h>
 #include <Arduino.h>
-#include "./Logging.h"
-#include "./SignalType.h"
+#include "./../Utils/Logging.h"
+#include "./../Utils/SignalType.h"
+#include "./../Utils/Package.h"
 #include "./RTCDef.h"
-#include "./Package.h"
 
 typedef unsigned long UL;
 

@@ -3,11 +3,14 @@
 
 #include <Arduino.h>
 #include "./WifiConfig.h"
-#include "./Package.h"
+#include "./Hardware.h"
+#include "./../Utils/Package.h"
+#include "./../Utils/SignalType.h"
+#include "./../Processor.h"
 
 class Processor;
 
-class WifiPartner
+class WifiPartner : public Hardware
 {
 public:
     WifiPartner(Processor *processor);
@@ -15,7 +18,7 @@ public:
     WifiPartner(const WifiPartner &) = delete;
     WifiPartner &operator=(const WifiPartner &) = delete;
 
-    void handleSignal(const uint16_t signal, Package *data = nullptr);
+    void handleSignal(const SignaLType signal, Package *data = nullptr) {};
 
     bool connectWifi();
     bool getStatusWifi() { return mStatusWifi; }

@@ -5,11 +5,16 @@ SerialPartner::SerialPartner(RemoteLight *rml) : mRML(rml)
 {
     Serial.begin(BAUND_RATE);
     Serial2.begin(BAUND_RATE, SERIAL_8N1, RXD2, TXD2);
-    mMode = COMMAND::NONE;
 
-    mCommandHandle[COMMAND::STATUS_WIFI]       = "0001";
-    mCommandHandle[COMMAND::STATUS_FIREBASE]   = "0002";
-    mCommandHandle[COMMAND::STATUS_NTP]        = "0003";
+    mCommandHandle[COMMAND::STATUS_WIFI]            = "0001";
+    mCommandHandle[COMMAND::STATUS_FIREBASE]        = "0002";
+    mCommandHandle[COMMAND::STATUS_NTP]             = "0003";
+    mCommandHandle[COMMAND::WIFI_SUCCESSFULL]       = "1001";
+    mCommandHandle[COMMAND::WIFI_FAILED]            = "1002";
+    mCommandHandle[COMMAND::FIREBASE_SUCCESSFULL]   = "2002";
+    mCommandHandle[COMMAND::FIREBASE_FAILED]        = "2003";
+    mCommandHandle[COMMAND::NTP_SUCCESSFULL]        = "3002";
+    mCommandHandle[COMMAND::NTP_FAILED]             = "3003";
 
     LOGI("Initialization SerialPartner!");
 }
@@ -24,7 +29,7 @@ void SerialPartner::listenning()
     while (Serial2.available() > 0)
     {
         receiverData = Serial2.readString();
-        LOGI("%s", receiverData.c_str());
+        // LOGI("%s", receiverData.c_str());
         handleMessage(receiverData);
     }
 }
@@ -39,8 +44,7 @@ void SerialPartner::handleSignal(const SignaLType signal, Package *data)
         if(command.length() != 0)
         {
             Serial2.write(command.c_str());
-            mMode = COMMAND::STATUS_WIFI;
-            LOGD("Send STATUS_WIFI");
+            // LOGD("Send the command to connect to WiFi");
         }
         else
         {
@@ -54,7 +58,6 @@ void SerialPartner::handleSignal(const SignaLType signal, Package *data)
         if(command.length() != 0)
         {
             Serial2.write(command.c_str());
-            mMode = COMMAND::STATUS_FIREBASE;
             LOGD("Send STATUS_FIREBASE");
         }
         else
@@ -65,12 +68,11 @@ void SerialPartner::handleSignal(const SignaLType signal, Package *data)
     }
     case (SignaLType::SERIAL_CHECK_STATUS_NTP):
     {
-        String command = mCommandHandle[COMMAND::STATUS_FIREBASE];
+        String command = mCommandHandle[COMMAND::STATUS_NTP];
         if(command.length() != 0)
         {
-            Serial2.write("STATUS_NTP");
-            mMode = COMMAND::STATUS_NTP;
-            LOGD("Send STATUS_NTP");
+            Serial2.write(command.c_str());
+            // LOGD("Send STATUS_NTP");
         }
         else
         {
@@ -84,39 +86,64 @@ void SerialPartner::handleSignal(const SignaLType signal, Package *data)
 
 void SerialPartner::handleMessage(String receiverData)
 {
-    LOGI("Receiver data: %s", receiverData.c_str());
-    if(receiverData.substring(0,1) == "1" && mMode == COMMAND::STATUS_WIFI)
+    String command = receiverData.substring(0,4);
+    LOGI("Receiver data: %s", command);
+    if(command == mCommandHandle[COMMAND::WIFI_SUCCESSFULL])
     {
         mRML->handleSignal(SignaLType::REMOTE_LIGHT_CONNECT_WIFI_SUCCESS);
-        mMode = COMMAND::NONE;
     }
-    else if(receiverData.substring(0,1) == "0" && mMode == COMMAND::STATUS_WIFI)
+    else if(command == mCommandHandle[COMMAND::WIFI_FAILED])
     {
-        mRML->handleSignal(SignaLType::REMOTE_LIGHT_CONNECT_WIFI_FAILED);
-        mMode = COMMAND::NONE;
+        LOGW("Received wifi connection signal failed. Try again.");
     }
-
-    if(receiverData.substring(0,1) == "1" && mMode == COMMAND::STATUS_FIREBASE)
+    else if(command == mCommandHandle[COMMAND::FIREBASE_SUCCESSFULL])
     {
         mRML->handleSignal(SignaLType::REMOTE_LIGHT_CONNECT_FIREBASE_SUCCESS);
-        mMode = COMMAND::NONE;
     }
-    else if(receiverData.substring(0,1) == "0" && mMode == COMMAND::STATUS_FIREBASE)
+    else if(command == mCommandHandle[COMMAND::FIREBASE_FAILED])
     {
-        mRML->handleSignal(SignaLType::REMOTE_LIGHT_CONNECT_FIREBASE_FAILED);
-        mMode = COMMAND::NONE;
+        LOGW("Received Firebase connection signal failed. Try again.");
     }
-
-    if(receiverData.substring(0,1) == "1" && mMode == COMMAND::STATUS_NTP)
+    else if(command == mCommandHandle[COMMAND::NTP_SUCCESSFULL])
     {
         mRML->handleSignal(SignaLType::REMOTE_LIGHT_CONNECT_NTP_SUCCESS);
-        mMode = COMMAND::NONE;
     }
-    else if(receiverData.substring(0,1) == "0" && mMode == COMMAND::STATUS_NTP)
+    else if(command == mCommandHandle[COMMAND::NTP_FAILED])
     {
-        mRML->handleSignal(SignaLType::REMOTE_LIGHT_CONNECT_NTP_FAILED);
-        mMode = COMMAND::NONE;
+        LOGW("Received NTP connection signal failed. Try again.");
     }
+    // if(receiverData.substring(0,1) ==  && mMode == COMMAND::STATUS_WIFI)
+    // {
+    //     mRML->handleSignal(SignaLType::REMOTE_LIGHT_CONNECT_WIFI_SUCCESS);
+    //     mMode = COMMAND::NONE;
+    // }
+    // else if(receiverData.substring(0,1) == "0" && mMode == COMMAND::STATUS_WIFI)
+    // {
+    //     mRML->handleSignal(SignaLType::REMOTE_LIGHT_CONNECT_WIFI_FAILED);
+    //     mMode = COMMAND::NONE;
+    // }
+
+    // if(receiverData.substring(0,1) == "1" && mMode == COMMAND::STATUS_FIREBASE)
+    // {
+    //     mRML->handleSignal(SignaLType::REMOTE_LIGHT_CONNECT_FIREBASE_SUCCESS);
+    //     mMode = COMMAND::NONE;
+    // }
+    // else if(receiverData.substring(0,1) == "0" && mMode == COMMAND::STATUS_FIREBASE)
+    // {
+    //     mRML->handleSignal(SignaLType::REMOTE_LIGHT_CONNECT_FIREBASE_FAILED);
+    //     mMode = COMMAND::NONE;
+    // }
+
+    // if(receiverData.substring(0,1) == "1" && mMode == COMMAND::STATUS_NTP)
+    // {
+    //     mRML->handleSignal(SignaLType::REMOTE_LIGHT_CONNECT_NTP_SUCCESS);
+    //     mMode = COMMAND::NONE;
+    // }
+    // else if(receiverData.substring(0,1) == "0" && mMode == COMMAND::STATUS_NTP)
+    // {
+    //     mRML->handleSignal(SignaLType::REMOTE_LIGHT_CONNECT_NTP_FAILED);
+    //     mMode = COMMAND::NONE;
+    // }
     /*
     else if(mMode == COMMAND::SSID)
     {

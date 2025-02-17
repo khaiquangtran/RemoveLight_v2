@@ -24,4 +24,5 @@ bool WifiPartner::connectWifi()
         Serial.println("Connecting successful");
         return true;
     }
+    mProcessor->handleSignal(SignaLType::NONE);
 }

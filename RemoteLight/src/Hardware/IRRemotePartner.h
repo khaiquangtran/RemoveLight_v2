@@ -2,7 +2,7 @@
 #define IR_REMOTE_PARTNER_H
 
 #include "./Hardware.h"
-#include "./RemoteLight.h"
+#include "./../RemoteLight.h"
 
 class RemoteLight;
 

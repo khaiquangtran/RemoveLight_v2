@@ -3,7 +3,7 @@
 
 #include "./Hardware.h"
 #include "./RTCDef.h"
-#include "./RemoteLight.h"
+#include "./../RemoteLight.h"
 
 using TimePair = std::pair<REG_TIME_LIGHT, TimeOfLight>;
 using LightMapValue = std::pair<TimePair, TimePair>;

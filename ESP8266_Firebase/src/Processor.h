@@ -2,12 +2,11 @@
 #define PROCESSOR_H
 
 #include <memory>
-#include "./WifiPartner.h"
-#include "./SerialPartner.h"
-#include "SignalType.h"
-#include "Package.h"
-
-// #include "../RemoteLight/src/Logging.h"
+#include "./Hardware/Hardware.h"
+#include "./Hardware/WifiPartner.h"
+#include "./Hardware/SerialPartner.h"
+#include "./Utils/SignalType.h"
+#include "./Utils/Package.h"
 
 class Processor
 {
@@ -20,8 +19,8 @@ public:
     void handleSignal(const SignaLType signal, Package *data = nullptr);
 
 private:
-    std::shared_ptr<WifiPartner> mWIFI;
-    std::shared_ptr<SerialPartner> mSERIAL;
+    std::shared_ptr<Hardware> mWIFI;
+    std::shared_ptr<Hardware> mSERIAL;
 };
 
 #endif // PROCESSOR_H

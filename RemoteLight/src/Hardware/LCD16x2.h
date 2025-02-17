@@ -3,7 +3,7 @@
 
 #include <LiquidCrystal_I2C.h>
 #include "./Hardware.h"
-#include "./RemoteLight.h"
+#include "./../RemoteLight.h"
 
 class RemoteLight;
 

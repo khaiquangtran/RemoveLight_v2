@@ -83,7 +83,7 @@ void LCD16x2::handleSignal(const SignaLType signal, Package *data)
 	}
 	else
 	{
-		LOGD("Handle signal value: %d", signal);
+		// LOGD("Handle signal value: %d", signal);
 		switch (signal)
 		{
 		case (SignaLType::LCD_DISPLAY_ALL_TIME):
@@ -391,7 +391,7 @@ void LCD16x2::displayStartConnectFirebase()
 void LCD16x2::displayStartConnectNTP()
 {
 	mLCD->setCursor(0,0);
-	mLCD->print("Connecting NTP   ");
+	mLCD->print("Connecting NTP  ");
 	mLCD->setCursor(0,1);
 }
 

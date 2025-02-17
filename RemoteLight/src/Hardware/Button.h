@@ -2,7 +2,7 @@
 #define BUTTON_H
 
 #include "./Hardware.h"
-#include "./RemoteLight.h"
+#include "./../RemoteLight.h"
 
 using stateButton = std::pair<bool, bool>;
 

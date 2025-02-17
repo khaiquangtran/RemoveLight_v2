@@ -1,11 +1,12 @@
 #include "./Processor.h"
 
-Processor *processor = new Processor();
+Processor *processor;
 
 void setup() {
-  processor->init();
+  processor = new Processor();
 }
 
 void loop() {
   processor->run();
+  delay(20);
 }

@@ -2,7 +2,7 @@
 #define LIGHT_H
 
 #include "./Hardware.h"
-#include "./RemoteLight.h"
+#include "./../RemoteLight.h"
 
 class RemoteLight;
 

@@ -60,7 +60,7 @@ void RTC::handleSignal(const SignaLType signal, Package *data)
 	}
 	else
 	{
-		LOGD("Handle signal value: %d", signal);
+		// LOGD("Handle signal value: %d", signal);
 		switch (signal)
 		{
 		case SignaLType::RTC_DISPLAY_ALL_TIME:
@@ -449,7 +449,7 @@ void RTC::sendAllTimeData(const SignaLType signal)
 	arr[5] = static_cast<int>(mAllTimeData.month);
 	arr[6] = static_cast<int>(mAllTimeData.year);
 	Package package(arr, sizeof(arr) / sizeof(int));
-	LOGI("Send signal %d", signal);
+	// LOGI("Send signal %d", signal);
 	mRML->handleSignal(signal, &package);
 }
 

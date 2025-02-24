@@ -13,6 +13,7 @@ public:
 
     void startTimer();
     void stopTimer();
+    void updateTimer(FuncCallback func, uint16_t duration);
 
 private:
     std::shared_ptr<ThreadPool> mPool;

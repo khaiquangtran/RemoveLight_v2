@@ -3,15 +3,13 @@
 
 #include <Arduino.h>
 #include <SoftwareSerial.h>
-#include "./Hardware.h"
+#include "./Network.h"
 #include "./../Processor.h"
-#include "./../Utils/Package.h"
-#include "./../Utils/SignalType.h"
 #include <map>
 
 class Processor;
 
-class SerialPartner : public Hardware
+class SerialPartner : public Network
 {
 public:
     SerialPartner(Processor *processor);
@@ -19,7 +17,7 @@ public:
 	SerialPartner(const SerialPartner &) = delete;
 	SerialPartner &operator=(const SerialPartner &) = delete;
 
-    void handleSignal(const SignaLType signal, Package *data = nullptr);
+    void handleSignal(const SignalType signal, Package *data = nullptr) override;
 
     void listen();
 
@@ -44,12 +42,11 @@ enum COMMAND {
 
 private:
 	Processor *mProcessor;
-    SoftwareSerial *Serial2;
     const int TXD2 = 5; // D1
     const int RXD2 = 4; // D2
-    const int BAUND_RATE = 115200;
-    // const int BAUND_RATE_2 = 115200;
-
+    const int BAUD_RATE = 115200;
+    // const int BAUD_RATE = 115200;
+    SoftwareSerial *mSerial2;
     void handleMessage(String receiverData);
 
     std::map<COMMAND, String> mCommandHandle;

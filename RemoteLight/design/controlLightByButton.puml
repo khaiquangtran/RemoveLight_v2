@@ -1,0 +1,29 @@
+@startuml
+participant RemoteLight
+participant Button
+participant Light
+
+note over RemoteLight, Light: init
+
+RemoteLight -> Button: listen Button
+
+alt pressed Button 1
+    Button -> RemoteLight : handleSignal(PRESS_BTN_1_SIGNAL)
+    RemoteLight -> Light : handleSignal(PRESS_BTN_1_SIGNAL)
+    Light -> Light : turn on/off Light1
+    Light -> RemoteLight : return
+else pressed Button 2
+    Button -> RemoteLight : handleSignal(PRESS_BTN_2_SIGNAL)
+    RemoteLight -> Light : handleSignal(PRESS_BTN_2_SIGNAL)
+    Light -> Light : turn on/off Light2
+    Light -> RemoteLight : return
+else pressed Button 3 :
+    Button -> RemoteLight : handleSignal(PRESS_BTN_3_SIGNAL)
+    RemoteLight -> Light : handleSignal(PRESS_BTN_3_SIGNAL)
+    Light -> Light : turn on/off Light3
+    Light -> RemoteLight : return
+else Other
+    note over RemoteLight, Button: Do nothing
+end
+
+@enduml

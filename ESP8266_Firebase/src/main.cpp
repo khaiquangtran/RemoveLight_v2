@@ -8,5 +8,5 @@ void setup() {
 
 void loop() {
   processor->run();
-  delay(20);
+  delay(200);
 }

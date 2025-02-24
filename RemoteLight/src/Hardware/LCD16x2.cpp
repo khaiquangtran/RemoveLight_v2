@@ -130,7 +130,7 @@ void LCD16x2::handleSignal(const SignaLType signal, Package *data)
 			displayMenuMode(0);
 			break;
 		}
-		case (SignaLType::LCD_MENU_MODE_BACk):
+		case (SignaLType::LCD_MENU_MODE_BACK):
 		case (SignaLType::LCD_MOVE_RIGHT_MENU_MODE):
 		case (SignaLType::LCD_MOVE_LEFT_MENU_MODE):
 		{

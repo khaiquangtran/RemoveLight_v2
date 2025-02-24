@@ -38,7 +38,7 @@ private:
 	RemoteLight *mRML;
     const int TXD2 = 17;
     const int RXD2 = 16;
-    const int BAUND_RATE = 115200;
+    const int BAUD_RATE = 115200;
 
     void handleMessage(String receiverData);
 

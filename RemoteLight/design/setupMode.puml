@@ -1,0 +1,111 @@
+@startuml
+
+participant RemoteLight
+participant IRRemotePartner as IR
+participant RTC
+participant LCD16x2
+
+note over RemoteLight, LCD16x2: init
+
+RemoteLight -> IR : listen IR Button
+
+alt pressed App Button
+    IR -> RemoteLight : handleSignal(IR_BTN_APP_SIGNAL)
+    RemoteLight -> RemoteLight : mLCDControlMode = LCD_CONTROL_MODE::SETUP_MODE
+    RemoteLight -> LCD16x2 : handleSignal(IR_BTN_APP_SIGNAL)
+    LCD16x2 -> LCD16x2 : displayStartSetupMode()
+    LCD16x2 -> RemoteLight : return
+    RemoteLight -> RemoteLight : start Timer
+    activate RemoteLight
+    RemoteLight -> RemoteLight : end Timer
+    destroy RemoteLight
+    RemoteLight -> RemoteLight : mLCDControlMode = LCD_CONTROL_MODE::INTO_SETUP_MODE
+    RemoteLight -> RTC : handleSignal(RTC_DISPLAY_ALL_TIME)
+    RTC -> RTC : get package
+    RTC -> RemoteLight : handleSignal(LCD_DISPLAY_ALL_TIME, package)
+    RemoteLight -> LCD16x2 : handleSignal(LCD_DISPLAY_ALL_TIME, package)
+    LCD16x2 -> LCD16x2 : parse the package \nand display
+    LCD16x2 -> RemoteLight : return
+    RemoteLight -> IR : listen IR Button
+
+    alt pressed Up Button
+        IR -> RemoteLight : handleSignal(IR_BTN_UP_SIGNAL)
+        alt mLCDControlMode == LCD_CONTROL_MODE::INTO_SETUP_MODE
+            RemoteLight -> RTC : handleSignal(RTC_INCREASE_VALUE)
+            RTC -> RTC : increaseValueOfTimeData()
+            RTC -> RTC : get package
+            RTC -> RemoteLight : handleSignal(LCD_DISPLAY_ALL_TIME, package)
+            RemoteLight -> LCD16x2 : handleSignal(LCD_DISPLAY_ALL_TIME, package)
+            LCD16x2 -> LCD16x2 : parse the package \nand display
+            LCD16x2 -> RemoteLight : return
+        else Other
+            note over RemoteLight : handle other task
+        end
+    else pressed Down Button
+        IR -> RemoteLight : handleSignal(IR_BTN_DOWN_SIGNAL)
+        alt mLCDControlMode == LCD_CONTROL_MODE::INTO_SETUP_MODE
+            RemoteLight -> RTC : handleSignal(RTC_DECREASE_VALUE)
+            RTC -> RTC : decreaseValueOfTimeData()
+            RTC -> RTC : get package
+            RTC -> RemoteLight : handleSignal(LCD_DISPLAY_ALL_TIME, package)
+            RemoteLight -> LCD16x2 : handleSignal(LCD_DISPLAY_ALL_TIME, package)
+            LCD16x2 -> LCD16x2 : parse the package \nand display
+            LCD16x2 -> RemoteLight : return
+        else Other
+            note over RemoteLight : handle other task
+        end
+    else pressed Left Button
+        IR -> RemoteLight : handleSignal(IR_BTN_LEFT_SIGNAL)
+        alt mLCDControlMode == LCD_CONTROL_MODE::INTO_SETUP_MODE
+            RemoteLight -> RTC : handleSignal(RTC_SHIFT_LEFT_VALUE)
+            RTC -> RTC : shiftIndexOfAllTimeData(true)
+            RTC -> RemoteLight : return
+        else Other
+            note over RemoteLight : handle other task
+        end
+    else pressed Right Button
+        IR -> RemoteLight : handleSignal(IR_BTN_RIGHT_SIGNAL)
+        alt mLCDControlMode == LCD_CONTROL_MODE::INTO_SETUP_MODE
+            RemoteLight -> RTC : handleSignal(RTC_SHIFT_RIGHT_VALUE)
+            RTC -> RTC : shiftIndexOfAllTimeData(false)
+            RTC -> RemoteLight : return
+        else Other
+            note over RemoteLight : handle other task
+        end
+    else pressed OK Button
+        IR -> RemoteLight : handleSignal(IR_BTN_OK_SIGNAL)
+        alt mLCDControlMode == LCD_CONTROL_MODE::INTO_SETUP_MODE
+            RemoteLight -> RTC : handleSignal(RTC_SETUP_MODE_OK)
+            RTC -> RTC : setTimeData()
+            RTC -> RemoteLight : handleSignal(REMOTE_LIGHT_END_SETUP_MODE)
+            RemoteLight -> RemoteLight : mLCDControlMode = LCD_CONTROL_MODE::END_SETUP_MODE
+            RemoteLight -> LCD16x2 : handleSignal(LCD_CLEAR_SCREEN)
+            LCD16x2 -> LCD16x2 : clear screen
+            LCD16x2 -> RemoteLight : return
+            RemoteLight -> LCD16x2 : handleSignal(LCD_DISPLAY_END_SETUP_MODE)
+            LCD16x2 -> LCD16x2 : displayEndSetupMode()
+            LCD16x2 -> RemoteLight : return
+            alt mLCDControlMode == LCD_CONTROL_MODE::END_SETUP_MODE
+            RemoteLight -> RemoteLight : start Timer
+            activate RemoteLight
+            RemoteLight -> RemoteLight : end Timer
+            destroy RemoteLight
+            RemoteLight -> LCD16x2 : handleSignal(LCD_CLEAR_SCREEN)
+            LCD16x2 -> LCD16x2 : clear screen
+            LCD16x2 -> RemoteLight : return
+            RemoteLight -> RemoteLight : displayAllTime
+            else Other
+                note over RemoteLight : handle other task
+            end
+        else Other
+            note over RemoteLight : handle other task
+        end
+    else pressed Button 1 || pressed Button 2 || pressed Button 3
+        note over RemoteLight, LCD16x2 : handle in controlLightByRemoteButton
+    else Other
+        note over RemoteLight, LCD16x2 : Do nothing
+    end
+else Other
+    note over RemoteLight, LCD16x2 : handle other task
+end
+@enduml

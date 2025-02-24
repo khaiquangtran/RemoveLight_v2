@@ -3,8 +3,8 @@
 
 SerialPartner::SerialPartner(RemoteLight *rml) : mRML(rml)
 {
-    Serial.begin(BAUND_RATE);
-    Serial2.begin(BAUND_RATE, SERIAL_8N1, RXD2, TXD2);
+    Serial.begin(BAUD_RATE);
+    Serial2.begin(BAUD_RATE, SERIAL_8N1, RXD2, TXD2);
 
     mCommandHandle[COMMAND::STATUS_WIFI]            = "0001";
     mCommandHandle[COMMAND::STATUS_FIREBASE]        = "0002";

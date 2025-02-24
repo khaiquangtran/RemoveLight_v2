@@ -1,0 +1,67 @@
+@startuml
+class Hardware {
+    +Hardware()
+	+\~Hardware() : <<virtual>>
+    +handleSignal() : void <<virtual>>
+    +listenIR() : void <<virtual>>
+    +listenButton() : void <<virtual>>
+}
+
+class Light {
+    +Light(rml : RemoteLight)
+    +\~Light()
+    +handleSignal() : void
+}
+
+class Button {
+    +Button()
+    +\~Button()
+    +listenButton(): void
+    +handleSignal() : void
+    -mRML : RemoteLight
+}
+
+class IRRemotePartner {
+    +IRRemotePartner()
+    +\~IRRemotePartner()
+    +listenIR() : void
+    +handleSignal() : void
+    -mRML : RemoteLight
+}
+
+class LCD16x2 {
+    +LCD16x2()
+    +\~LCD16x2()
+    +handleSignal() : void
+    -mRML : RemoteLight
+}
+
+class RTC {
+    +RTC()
+    +\~RTC()
+    +handleSignal() : void
+    -mRML : RemoteLight
+}
+
+class RemoteLight {
+    +RemoteLight()
+	+\~RemoteLight()
+    +handleSignal() : void
+    -mRTC : RTC
+	-mIR : IRRemotePartner
+	-mLCD : LCD16x2
+	-mBTN : Button
+	-mLIGHT : Light
+}
+
+Hardware <|-- Light
+Hardware <|-- Button
+Hardware <|-- IRRemotePartner
+Hardware <|-- LCD16x2
+Hardware <|-- RTC
+RemoteLight --> Light
+RemoteLight --> Button
+RemoteLight --> IRRemotePartner
+RemoteLight --> LCD16x2
+RemoteLight --> RTC
+@enduml

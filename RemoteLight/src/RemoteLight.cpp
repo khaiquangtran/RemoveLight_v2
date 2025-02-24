@@ -13,21 +13,20 @@ RemoteLight::RemoteLight()
 	setStateConnect(STATE_CONNECT::NOK);
 
 	mCounterConnectWifi = 0;
-	mCounterConnectFirebase = 0;
-	mCounterConnectNTP = 0;
 	mCounterDisplayAllTime = 0;
 
-	mTimerMgr = std::make_shared<TimerManager>(4);
+	mFlagConnectFirebase = 0;
+	mFlagConnectNTP = 0;
+
+	mTimerMgr = std::make_shared<TimerManager>(5);
 	mTimerConnectWifi = mTimerMgr->createTimer([this]() {
 		this->onTimeout(SignaLType::TIMER_CONNECT_WIFI_SIGNAL);}, DELAY_3S);
-	mTimerConnectFirebase = mTimerMgr->createTimer([this]() {
-		this->onTimeout(SignaLType::TIMER_CONNECT_FIREBASE_SIGNAL);}, DELAY_3S);
-	mTimerConnectNTP = mTimerMgr->createTimer([this]() {
-		this->onTimeout(SignaLType::TIMER_CONNECT_NTP_SIGNAL);}, DELAY_3S);
 
 	mTimerDisplayAll = mTimerMgr->createTimer([this]() {
 		this->onTimeout(SignaLType::TIMER_DISPLAY_ALL_TIME_SIGNAL);}, DELAY_1S);
 
+	mTimerDisplaySetupMode = mTimerMgr->createTimer([this](){
+		this->onTimeout(SignaLType::TIMER_DISPLAY_ALL_SETUP_MODE_SIGNAL);}, DELAY_3S);
 	LOGI("Initialization RemoteLight!");
 }
 
@@ -58,7 +57,7 @@ void RemoteLight::handleSignal(const SignaLType signal, Package *data)
 		mLIGHT->handleSignal(signal);
 		break;
 	}
-	case (SignaLType::LCD_MENU_MODE_BACk):
+	case (SignaLType::LCD_MENU_MODE_BACK):
 	case (SignaLType::LCD_MENU_MODE_OK):
 	case (SignaLType::LCD_MOVE_LEFT_MENU_MODE):
 	case (SignaLType::LCD_MOVE_RIGHT_MENU_MODE):
@@ -199,6 +198,9 @@ void RemoteLight::handleSignal(const SignaLType signal, Package *data)
 	}
 	case (SignaLType::REMOTE_LIGHT_CONNECT_FIREBASE_SUCCESS):
 	{
+		mTimerConnectWifi->stopTimer();
+		mCounterConnectWifi = 0;
+		mFlagConnectFirebase = 1;
 		mLCD->handleSignal(SignaLType::LCD_CONNECT_FIREBASE_SUCCESS);
 		delay(1000);
 		mLCD->handleSignal(SignaLType::LCD_CLEAR_SCREEN);
@@ -213,6 +215,9 @@ void RemoteLight::handleSignal(const SignaLType signal, Package *data)
 	}
 	case (SignaLType::REMOTE_LIGHT_CONNECT_NTP_SUCCESS):
 	{
+		mTimerConnectWifi->stopTimer();
+		mCounterConnectWifi = 0;
+		mFlagConnectNTP = 1;
 		mLCD->handleSignal(SignaLType::LCD_CONNECT_NTP_SUCCESS);
 		delay(1000);
 		mLCD->handleSignal(SignaLType::LCD_CLEAR_SCREEN);
@@ -275,15 +280,19 @@ void RemoteLight::connectWifiMode()
 	{
 		mSerial->handleSignal(SignaLType::SERIAL_CHECK_STATUS_FIREBASE);
 		setStateConnect(STATE_CONNECT::NOK);
-		mTimerConnectFirebase->startTimer();
-		LOGI("FIREBASE connection %d times", mCounterConnectFirebase);
+		mTimerConnectWifi->updateTimer([this]() {
+			this->onTimeout(SignaLType::TIMER_CONNECT_FIREBASE_SIGNAL);}, DELAY_5S);
+		mTimerConnectWifi->startTimer();
+		LOGI("FIREBASE connection %d times", mCounterConnectWifi);
 	}
 	else if(getStateConnect() == STATE_CONNECT::NTP)
 	{
 		mSerial->handleSignal(SignaLType::SERIAL_CHECK_STATUS_NTP);
 		setStateConnect(STATE_CONNECT::NOK);
-		mTimerConnectNTP->startTimer();
-		LOGI("NTP connection %d times", mCounterConnectNTP);
+		mTimerConnectWifi->updateTimer([this]() {
+			this->onTimeout(SignaLType::TIMER_CONNECT_NTP_SIGNAL);}, DELAY_3S);
+		mTimerConnectWifi->startTimer();
+		LOGI("NTP connection %d times", mCounterConnectWifi);
 	}
 }
 
@@ -296,10 +305,17 @@ void RemoteLight::displayAllTime()
 
 void RemoteLight::displaySetupMode()
 {
+	setControlMode(CONTROL_MODE::NONE);
+	mTimerDisplaySetupMode->startTimer();
 }
 
 void RemoteLight::displayEndSetupMode()
 {
+	setControlMode(CONTROL_MODE::NONE);
+	mTimerDisplaySetupMode->updateTimer(
+		[this](){this->onTimeout(SignaLType::TIMER_DISPLAY_ALL_END_SETUP_MODE_SIGNAL);}, DELAY_3S
+	);
+	mTimerDisplaySetupMode->startTimer();
 }
 
 void RemoteLight::onTimeout(const SignaLType signal)
@@ -326,17 +342,17 @@ void RemoteLight::onTimeout(const SignaLType signal)
 		}
 		break;
 	case SignaLType::TIMER_CONNECT_FIREBASE_SIGNAL:
-		if(mCounterConnectFirebase < REPEATS_10)
+		if(mCounterConnectWifi < REPEATS_10)
 		{
 			mLCD->handleSignal(SignaLType::LCD_DISPLAY_CONNECT_WIFI);
-			mCounterConnectFirebase++;
+			mCounterConnectWifi++;
 			setStateConnect(STATE_CONNECT::FIREBASE);
 		}
 		else
 		{
-			mTimerConnectFirebase->stopTimer();
+			mTimerConnectWifi->stopTimer();
 			setStateConnect(STATE_CONNECT::NOK);
-			mCounterConnectFirebase = 0;
+			mCounterConnectWifi = 0;
 			mLCD->handleSignal(SignaLType::LCD_CONNECT_FIREBASE_FAILED);
 			LOGW("Firebase connection FAILED!");
 			delay(3000);
@@ -346,17 +362,17 @@ void RemoteLight::onTimeout(const SignaLType signal)
 		}
 		break;
 	case SignaLType::TIMER_CONNECT_NTP_SIGNAL:
-		if(mCounterConnectNTP < REPEATS_10)
+		if(mCounterConnectWifi < REPEATS_10)
 		{
 			mLCD->handleSignal(SignaLType::LCD_DISPLAY_CONNECT_WIFI);
-			mCounterConnectNTP++;
+			mCounterConnectWifi++;
 			setStateConnect(STATE_CONNECT::NTP);
 		}
 		else
 		{
-			mTimerConnectNTP->stopTimer();
+			mTimerConnectWifi->stopTimer();
 			setStateConnect(STATE_CONNECT::NOK);
-			mCounterConnectNTP = 0;
+			mCounterConnectWifi = 0;
 			mLCD->handleSignal(SignaLType::LCD_CONNECT_NTP_FAILED);
 			LOGW("NTP connection FAILED!");
 			delay(3000);
@@ -377,6 +393,16 @@ void RemoteLight::onTimeout(const SignaLType signal)
 			mLCD->handleSignal(SignaLType::LCD_CLEAR_TURN_OFF_SCREEN);
 			mTimerDisplayAll->stopTimer();
 		}
+		break;
+	case SignaLType::TIMER_DISPLAY_ALL_SETUP_MODE_SIGNAL:
+		mTimerDisplaySetupMode->stopTimer();
+		mRTC->handleSignal(SignaLType::RTC_DISPLAY_ALL_TIME);
+		setControlMode(CONTROL_MODE::INTO_SETUP_MODE);
+		break;
+	case SignaLType::TIMER_DISPLAY_ALL_END_SETUP_MODE_SIGNAL:
+		mTimerDisplaySetupMode->stopTimer();
+		mLCD->handleSignal(SignaLType::LCD_CLEAR_SCREEN);
+		setControlMode(CONTROL_MODE::DISPLAY_ALL);
 		break;
 	default:
 		break;

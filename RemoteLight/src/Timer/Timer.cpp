@@ -19,3 +19,9 @@ void Timer::stopTimer()
 {
     mClear.store(true);
 }
+
+void Timer::updateTimer(FuncCallback func, uint16_t duration)
+{
+    mFunction = std::move(func);
+    mDuration = duration;
+}

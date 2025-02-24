@@ -1,0 +1,126 @@
+@startuml
+
+participant RemoteLight
+participant IRRemotePartner as IR
+participant RTC
+participant LCD16x2
+
+note over RemoteLight, LCD16x2: init
+
+RemoteLight -> IR : listen IR Button
+
+alt pressed Menu Button
+    IR -> RemoteLight : handleSignal(IR_BTN_MENU_SIGNAL)
+    RemoteLight -> RemoteLight : mLCDControlMode = LCD_CONTROL_MODE::MENU_MODE
+    RemoteLight -> LCD16x2 : handleSignal(LCD_CLEAR_SCREEN)
+    LCD16x2 -> LCD16x2 : clear screeen
+    LCD16x2 -> RemoteLight : return
+    RemoteLight -> LCD16x2 : handleSignal(LCD_TURN_ON_LIGHT)
+    LCD16x2 -> LCD16x2 : turn on blacklight
+    LCD16x2 -> RemoteLight : return
+    RemoteLight -> LCD16x2 : handleSignal(IR_BTN_MENU_SIGNAL)
+    LCD16x2 -> LCD16x2 : displayMenuMode()
+    LCD16x2 -> RemoteLight : return
+    RemoteLight -> IR : listen IR Button
+    alt pressed Left Button
+        IR -> RemoteLight : handleSignal(IR_BTN_LEFT_SIGNAL)
+        alt mLCDControlMode == LCD_CONTROL_MODE::MENU_MODE
+            RemoteLight -> RTC : handleSignal(RTC_MOVE_LEFT_MENU_MODE)
+            RTC -> RTC : mIndexListLight--
+            RTC -> RTC : make data
+            RTC -> RemoteLight : handleSignal(LCD_MOVE_LEFT_MENU_MODE, data)
+            RemoteLight -> LCD16x2 : handleSignal(LCD_MOVE_LEFT_MENU_MODE, data)
+            LCD16x2 -> LCD16x2 : displayMenuMode()
+            LCD16x2 -> RemoteLight : return
+        else mLCDControlMode == LCD_CONTROL_MODE::INTO_MENU_MODE
+            RemoteLight -> RTC : handleSignal(RTC_MOVE_LEFT_INTO_MENU_MODE)
+            RTC -> RTC : mIndexLight--
+            RTC -> RemoteLight : return
+        else Other
+            note over RemoteLight, LCD16x2 : Handle other task
+        end
+    else pressed Right Button
+        IR -> RemoteLight : handleSignal(IR_BTN_RIGHT_SIGNAL)
+        alt mLCDControlMode == LCD_CONTROL_MODE::MENU_MODE
+            RemoteLight -> RTC : handleSignal(RTC_MOVE_RIGHT_MENU_MODE)
+            RTC -> RTC : mIndexListLight++
+            RTC -> RTC : make data
+            RTC -> RemoteLight : handleSignal(LCD_MOVE_RIGHT_MENU_MODE, data)
+            RemoteLight -> LCD16x2 : handleSignal(LCD_MOVE_RIGHT_MENU_MODE, data)
+            LCD16x2 -> LCD16x2 : displayMenuMode()
+            LCD16x2 -> RemoteLight : return
+        else mLCDControlMode == LCD_CONTROL_MODE::INTO_MENU_MODE
+            RemoteLight -> RTC : handleSignal(RTC_MOVE_RIGHT_INTO_MENU_MODE)
+            RTC -> RTC : mIndexLight++
+            RTC -> RemoteLight : return
+        else Other
+            note over RemoteLight, LCD16x2 : Handle other task
+        end
+    else pressed Up Button
+        IR -> RemoteLight : handleSignal(IR_BTN_UP_SIGNAL)
+        alt mLCDControlMode == LCD_CONTROL_MODE::INTO_MENU_MODE
+            RemoteLight -> RTC : handleSignal(RTC_INCREASE_VALUE_MENU_MODE)
+            RTC -> RTC : increaseValueOfMenuMode()
+            RTC -> RTC : make data
+            RTC -> RemoteLight : handleSignal(LCD_MENU_MODE_OK, data)
+            RemoteLight -> LCD16x2 : handleSignal(LCD_MENU_MODE_OK, data)
+            LCD16x2 -> LCD16x2 : displaySelectMenuMode()
+            LCD16x2 -> RemoteLight : return 
+        else Other
+            note over RemoteLight, LCD16x2 : Handle other task
+        end
+    else pressed Down Button
+        IR -> RemoteLight : handleSignal(IR_BTN_DOWN_SIGNAL)
+        alt mLCDControlMode == LCD_CONTROL_MODE::INTO_MENU_MODE
+            RemoteLight -> RTC : handleSignal(RTC_DECREASE_VALUE_MENU_MODE)
+            RTC -> RTC : decreaseValueOfMenuMode()
+            RTC -> RTC : make data
+            RTC -> RemoteLight : handleSignal(LCD_MENU_MODE_OK, data)
+            RemoteLight -> LCD16x2 : handleSignal(LCD_MENU_MODE_OK, data)
+            LCD16x2 -> LCD16x2 : displaySelectMenuMode()
+            LCD16x2 -> RemoteLight : return 
+        else Other
+            note over RemoteLight, LCD16x2 : Handle other task
+        end
+    else pressed OK Button
+        IR -> RemoteLight : handleSignal(IR_BTN_OK_SIGNAL)
+        alt mLCDControlMode == LCD_CONTROL_MODE::MENU_MODE
+            RemoteLight -> RemoteLight : mLCDControlMode = LCD_CONTROL_MODE::INTO_MENU_MODE
+            RemoteLight -> LCD16x2 : handleSignal(LCD_CLEAR_SCREEN)
+            LCD16x2 -> LCD16x2 : clear screen
+            LCD16x2 -> RemoteLight : return
+            RemoteLight -> RTC : handleSignal(RTC_MENU_MODE_OK)
+            RTC -> RTC : make data
+            RTC -> RemoteLight : handleSignal(LCD_MENU_MODE_OK, data)
+            RemoteLight -> LCD16x2 : handleSignal(LCD_MENU_MODE_OK, data)
+            LCD16x2 -> LCD16x2 : displaySelectMenuMode()
+            LCD16x2 -> RemoteLight : return
+        else Other
+            note over RemoteLight, LCD16x2 : Handle other task
+        end
+    else pressed Back Button
+        IR -> RemoteLight : handleSignal(IR_BTN_BACK_SIGNAL)
+        alt mLCDControlMode == LCD_CONTROL_MODE::INTO_MENU_MODE
+            RemoteLight -> RemoteLight : mLCDControlMode = LCD_CONTROL_MODE::MENU_MODE
+            RemoteLight -> LCD16x2 : handleSignal(LCD_CLEAR_SCREEN)
+            LCD16x2 -> LCD16x2 : clearn screen
+            LCD16x2 -> RemoteLight : return
+            RemoteLight -> RTC : handleSignal(RTC_BACK_MENU_MODE);
+            RTC -> RTC : set time of light
+            RTC -> RTC : make data
+            RTC -> RemoteLight : handleSignal(LCD_MENU_MODE_BACK, data)
+            RemoteLight -> LCD16x2 : handleSignal(LCD_MENU_MODE_BACK, data)
+            LCD16x2 -> LCD16x2 : displayMenuMode()
+            LCD16x2 -> RemoteLight : return
+        else Other
+            note over RemoteLight, LCD16x2 : Handle other task
+        end
+    else Other
+        note over RemoteLight, LCD16x2 : Handle other task
+    end
+
+else Other
+    note over RemoteLight, LCD16x2 : handle other task
+end
+
+@enduml

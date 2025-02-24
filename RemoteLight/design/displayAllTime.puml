@@ -1,0 +1,21 @@
+@startuml
+participant RemoteLight
+participant RTC
+participant LCD16x2
+
+note over RemoteLight, LCD16x2: init
+
+alt mLCDControlMode == LCD_CONTROL_MODE::DISPLAY_ALL
+    loop 30 times
+        RemoteLight -> RTC : handleSignal(RTC_DISPLAY_ALL_TIME)
+        RTC -> RTC : get package
+        RTC -> RemoteLight : handleSignal(LCD_DISPLAY_ALL_TIME, package)
+        RemoteLight -> LCD16x2 : handleSignal(LCD_DISPLAY_ALL_TIME, package)
+        LCD16x2 -> LCD16x2 : parse the package \nand display
+        LCD16x2 -> RemoteLight : return
+    end
+else Other
+    note over RemoteLight, LCD16x2: handle other task
+end
+
+@enduml

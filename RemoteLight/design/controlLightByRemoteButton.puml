@@ -1,0 +1,29 @@
+@startuml
+participant RemoteLight
+participant IRRemotePartner
+participant Light
+
+note over RemoteLight, Light: init
+
+RemoteLight -> IRRemotePartner: listen Button
+
+alt pressed Button 1
+    IRRemotePartner -> RemoteLight : handleSignal(IR_BTN_1_SIGNAL)
+    RemoteLight -> Light : handleSignal(IR_BTN_1_SIGNAL)
+    Light -> Light : turn on/off Light1
+    Light -> RemoteLight : return
+else pressed Button 2
+    IRRemotePartner -> RemoteLight : handleSignal(IR_BTN_2_SIGNAL)
+    RemoteLight -> Light : handleSignal(IR_BTN_2_SIGNAL)
+    Light -> Light : turn on/off Light2
+    Light -> RemoteLight : return
+else pressed Button 3
+    IRRemotePartner -> RemoteLight : handleSignal(IR_BTN_3_SIGNAL)
+    RemoteLight -> Light : handleSignal(IR_BTN_3_SIGNAL)
+    Light -> Light : turn on/off Light3
+    Light -> RemoteLight : return
+else Other
+    note over RemoteLight, IRRemotePartner: Do nothing
+end
+
+@endpuml

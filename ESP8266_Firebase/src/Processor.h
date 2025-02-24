@@ -2,11 +2,9 @@
 #define PROCESSOR_H
 
 #include <memory>
-#include "./Hardware/Hardware.h"
-#include "./Hardware/WifiPartner.h"
-#include "./Hardware/SerialPartner.h"
-#include "./Utils/SignalType.h"
-#include "./Utils/Package.h"
+#include "./Network/Network.h"
+#include "./Network/WifiPartner.h"
+#include "./Network/SerialPartner.h"
 
 class Processor
 {
@@ -16,11 +14,14 @@ public:
 
     void run();
     void init();
-    void handleSignal(const SignaLType signal, Package *data = nullptr);
+    void handleSignal(const SignalType signal, Package *data = nullptr);
 
 private:
-    std::shared_ptr<Hardware> mWIFI;
-    std::shared_ptr<Hardware> mSERIAL;
+    std::shared_ptr<Network> mWIFI;
+    std::shared_ptr<Network> mSERIAL;
+
+	int8_t mFlagConnectFirebase;
+	int8_t mFlagConnectNTP;
 };
 
 #endif // PROCESSOR_H

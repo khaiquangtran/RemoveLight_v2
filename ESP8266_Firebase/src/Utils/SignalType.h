@@ -1,9 +1,9 @@
-#ifndef SIGNALTYPE_H
-#define SIGNALTYPE_H
+#ifndef SignalType_H
+#define SignalType_H
 
 #include <iostream>
 
-enum SignaLType : uint16_t
+enum SignalType : uint16_t
 {
     NONE = 0,
     STATUS_NEXTWORK = 1000,
@@ -17,6 +17,9 @@ enum SignaLType : uint16_t
     CONNECT_FIREBASE_FAILED,
     CONNECT_NTP_SUCCESSFULL,
     CONNECT_NTP_FAILED,
+
+    CHECK_COMMAND_FIREBASE,
+    REQUEST_ALLTIME_DATA,
 };
 
-#endif // SIGNALTYPE_H
+#endif // SignalType_H

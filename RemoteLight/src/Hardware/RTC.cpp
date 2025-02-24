@@ -178,7 +178,7 @@ void RTC::handleSignal(const SignaLType signal, Package *data)
 			setTimeLight(LISTLIGHT[mIndexListLight], mTimeOfLight[LISTLIGHT[mIndexListLight]].second.second, mTimeOfLight[LISTLIGHT[mIndexListLight]].second.first);
 			int value = static_cast<int>(mIndexListLight);
 			Package data(&value, 1);
-			mRML->handleSignal(SignaLType::LCD_MENU_MODE_BACk, &data);
+			mRML->handleSignal(SignaLType::LCD_MENU_MODE_BACK, &data);
 			break;
 		}
 		default:

@@ -43,13 +43,13 @@ void Processor::handleSignal(const SignalType signal, Package *data)
         mSERIAL->handleSignal(SignalType::CONNECT_WIFI_FAILED);
         break;
     case SignalType::CONNECT_WIFI_SUCCESSFULL:
-        mSERIAL->handleSignal(SignalType::CONNECT_WIFI_SUCCESSFULL);
+        mSERIAL->handleSignal(SignalType::CONNECT_WIFI_FAILED);
         break;
     case SignalType::STATUS_FIREBASE:
         mWIFI->handleSignal(SignalType::STATUS_FIREBASE);
         break;
     case SignalType::CONNECT_FIREBASE_FAILED:
-        mFlagConnectFirebase = 1;
+        mFlagConnectFirebase = -1;
         mSERIAL->handleSignal(SignalType::CONNECT_FIREBASE_FAILED);
         break;
     case SignalType::CONNECT_FIREBASE_SUCCESSFULL:

@@ -6,15 +6,16 @@ SerialPartner::SerialPartner(Processor *processor) : mProcessor(processor)
     mSerial2 = new SoftwareSerial(RXD2, TXD2);
     mSerial2->begin(BAUD_RATE);
 
-    mCommandHandle[COMMAND::STATUS_WIFI] = "0001";
-    mCommandHandle[COMMAND::STATUS_FIREBASE] = "0002";
-    mCommandHandle[COMMAND::STATUS_NTP] = "0003";
-    mCommandHandle[COMMAND::WIFI_SUCCESSFULL] = "1001";
-    mCommandHandle[COMMAND::WIFI_FAILED] = "1002";
-    mCommandHandle[COMMAND::FIREBASE_SUCCESSFULL] = "2002";
-    mCommandHandle[COMMAND::FIREBASE_FAILED] = "2003";
-    mCommandHandle[COMMAND::NTP_SUCCESSFULL] = "3002";
-    mCommandHandle[COMMAND::NTP_FAILED] = "3003";
+    mCommandHandle[COMMAND::STATUS_WIFI]            = "0001";
+    mCommandHandle[COMMAND::STATUS_FIREBASE]        = "0002";
+    mCommandHandle[COMMAND::STATUS_NTP]             = "0003";
+    mCommandHandle[COMMAND::WIFI_SUCCESSFULL]       = "1001";
+    mCommandHandle[COMMAND::WIFI_FAILED]            = "1002";
+    mCommandHandle[COMMAND::FIREBASE_SUCCESSFULL]   = "2002";
+    mCommandHandle[COMMAND::FIREBASE_FAILED]        = "2003";
+    mCommandHandle[COMMAND::NTP_SUCCESSFULL]        = "3002";
+    mCommandHandle[COMMAND::NTP_FAILED]             = "3003";
+    mCommandHandle[COMMAND::REQUEST_ALLTIME_DATA]   = "4004";
 }
 
 SerialPartner::~SerialPartner()
@@ -70,6 +71,11 @@ void SerialPartner::handleSignal(const SignalType signal, Package *data)
     case SignalType::CONNECT_NTP_FAILED:
     {
         mSerial2->write(mCommandHandle[COMMAND::NTP_FAILED].c_str());
+        break;
+    }
+    case SignalType::REQUEST_ALLTIME_DATA:
+    {
+        mSerial2->write(mCommandHandle[COMMAND::REQUEST_ALLTIME_DATA].c_str());
         break;
     }
     default:

@@ -60,7 +60,7 @@ void RTC::handleSignal(const SignaLType signal, Package *data)
 	}
 	else
 	{
-		// LOGD("Handle signal value: %d", signal);
+		LOGD("Handle signal value: %d", signal);
 		switch (signal)
 		{
 		case SignaLType::RTC_DISPLAY_ALL_TIME:

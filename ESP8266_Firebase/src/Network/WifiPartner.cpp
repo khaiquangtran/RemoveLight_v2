@@ -37,6 +37,7 @@ void WifiPartner::handleSignal(const SignalType signal, Package *data)
     case SignalType::CHECK_COMMAND_FIREBASE:
     {
         checkCommandFirebase();
+        break;
     }
     default:
         break;

@@ -15,6 +15,7 @@ SerialPartner::SerialPartner(RemoteLight *rml) : mRML(rml)
     mCommandHandle[COMMAND::FIREBASE_FAILED]        = "2003";
     mCommandHandle[COMMAND::NTP_SUCCESSFULL]        = "3002";
     mCommandHandle[COMMAND::NTP_FAILED]             = "3003";
+    mCommandHandle[COMMAND::REQUEST_ALLTIME_DATA]   = "4004";
 
     LOGI("Initialization SerialPartner!");
 }
@@ -112,69 +113,8 @@ void SerialPartner::handleMessage(String receiverData)
     {
         LOGW("Received NTP connection signal failed. Try again.");
     }
-    // if(receiverData.substring(0,1) ==  && mMode == COMMAND::STATUS_WIFI)
-    // {
-    //     mRML->handleSignal(SignaLType::REMOTE_LIGHT_CONNECT_WIFI_SUCCESS);
-    //     mMode = COMMAND::NONE;
-    // }
-    // else if(receiverData.substring(0,1) == "0" && mMode == COMMAND::STATUS_WIFI)
-    // {
-    //     mRML->handleSignal(SignaLType::REMOTE_LIGHT_CONNECT_WIFI_FAILED);
-    //     mMode = COMMAND::NONE;
-    // }
-
-    // if(receiverData.substring(0,1) == "1" && mMode == COMMAND::STATUS_FIREBASE)
-    // {
-    //     mRML->handleSignal(SignaLType::REMOTE_LIGHT_CONNECT_FIREBASE_SUCCESS);
-    //     mMode = COMMAND::NONE;
-    // }
-    // else if(receiverData.substring(0,1) == "0" && mMode == COMMAND::STATUS_FIREBASE)
-    // {
-    //     mRML->handleSignal(SignaLType::REMOTE_LIGHT_CONNECT_FIREBASE_FAILED);
-    //     mMode = COMMAND::NONE;
-    // }
-
-    // if(receiverData.substring(0,1) == "1" && mMode == COMMAND::STATUS_NTP)
-    // {
-    //     mRML->handleSignal(SignaLType::REMOTE_LIGHT_CONNECT_NTP_SUCCESS);
-    //     mMode = COMMAND::NONE;
-    // }
-    // else if(receiverData.substring(0,1) == "0" && mMode == COMMAND::STATUS_NTP)
-    // {
-    //     mRML->handleSignal(SignaLType::REMOTE_LIGHT_CONNECT_NTP_FAILED);
-    //     mMode = COMMAND::NONE;
-    // }
-    /*
-    else if(mMode == COMMAND::SSID)
+    else if(command == mCommandHandle[COMMAND::REQUEST_ALLTIME_DATA])
     {
-        const int length = receiverData.length();
-        int data[length];
-        for(int i = 0; i < length; i++)
-        {
-            data[i] = receiverData[i];
-        }
-        Package package(data, length);
-        // mRML->handleSignal(SignaLType::WIFIPARTNER_SEND_SSID, package);
-        Serial.println("Enter PASSWORD: ");
-        mMode = COMMAND::PASSWORD;
-
+        mRML->handleSignal(SignaLType::REQUEST_ALLTIME_DATA);
     }
-    else if(mMode == COMMAND::PASSWORD)
-    {
-        Serial.println("Connect wifi ...");
-        const int length = receiverData.length();
-        int data[length];
-        for(int i = 0; i < length; i++)
-        {
-            data[i] = receiverData[i];
-        }
-        Package package(data, length);
-        // mRML->handleSignal(SignaLType::WIFIPARTNER_SEND_PASSWORD, package);
-        mRML->handleSignal(SignaLType::REMOTE_LIGHT_CONNECT_WIFI);
-        mMode = COMMAND::NONE;
-    }
-    else
-    {
-        Serial.println("Don't support command!!! Please double check.");
-    }*/
 }

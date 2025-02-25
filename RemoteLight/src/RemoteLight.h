@@ -30,7 +30,8 @@ private:
 	{
 		NONE = 0U,
 		DISPLAY_ALL,
-		SETUP_MODE,
+		READY_SETUP_MODE,
+		START_SETUP_MODE,
 		INTO_SETUP_MODE,
 		END_SETUP_MODE,
 		MENU_MODE,
@@ -62,7 +63,7 @@ private:
 	const uint16_t DELAY_3S  = 3000U;
 	const uint16_t DELAY_5S  = 5000U;
 	const uint8_t REPEATS_30  = 30U;
-	const uint8_t REPEATS_10  = 3U;
+	const uint8_t REPEATS_10  = 1U;
 
 	uint8_t mCounterConnectWifi;
 	uint8_t mCounterDisplayAllTime;
@@ -78,7 +79,8 @@ private:
 
 	void connectWifiMode();
 	void displayAllTime();
-	void displaySetupMode();
+	void displayReadySetupMode();
+	void intoSetupMode();
 	void displayEndSetupMode();
 
 	void setControlMode(const CONTROL_MODE state);

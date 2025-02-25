@@ -38,6 +38,7 @@ enum COMMAND {
     FIREBASE_FAILED,
     NTP_SUCCESSFULL,
     NTP_FAILED,
+    REQUEST_ALLTIME_DATA,
 };
 
 private:

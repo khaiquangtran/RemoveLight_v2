@@ -39,6 +39,11 @@ void WifiPartner::handleSignal(const SignalType signal, Package *data)
         checkCommandFirebase();
         break;
     }
+    case SignalType::WEB_GET_ALLTIME_DATA_RESPONSE:
+    {
+        sendAllTimeDatatoWeb(data);
+        break;
+    }
     default:
         break;
     }
@@ -59,10 +64,17 @@ void WifiPartner::connectWifi()
 void WifiPartner::signUp()
 {
     // Serial.println("Connecting to Firebase...");
-    if(Firebase.signUp(&mConfig, &mAuth, "", "") == true)
+    if (Firebase.signUp(&mConfig, &mAuth, "", "") == true)
     {
         Firebase.begin(&mConfig, &mAuth);
-        mProcessor->handleSignal(SignalType::CONNECT_FIREBASE_SUCCESSFULL);
+        // Firebase.reconnectWiFi(true);
+        if(Firebase.ready()) {
+            mProcessor->handleSignal(SignalType::CONNECT_FIREBASE_SUCCESSFULL);
+        }
+        else {
+            Serial.println("FAILED");
+            Serial.println("REASON: " + mFbdo.errorReason());
+        }
     }
     else
     {
@@ -84,16 +96,94 @@ void WifiPartner::checkConnectNTP()
 
 void WifiPartner::checkCommandFirebase()
 {
-    if (Firebase.RTDB.getInt(&mFbdo, mCommandAllTimerPath.c_str())) {
-        if(mFbdo.intData() == 1)
+    if (Firebase.RTDB.getInt(&mFbdo, ALLTIME_COMMAND_PATH))
+    {
+        if (mFbdo.intData() == 1)
         {
-            Firebase.RTDB.setInt(&mFbdo, mCommandAllTimerPath.c_str(), 3);
-            mProcessor->handleSignal(SignalType::REQUEST_ALLTIME_DATA);
+            Firebase.RTDB.setInt(&mFbdo, ALLTIME_COMMAND_PATH, 3);
+            mProcessor->handleSignal(SignalType::WEB_GET_ALLTIME_DATA_REQUEST);
         }
     }
     else
     {
         Serial.print("error: ");
         Serial.println(mFbdo.errorReason());
+    }
+}
+
+void WifiPartner::sendAllTimeDatatoWeb(Package *data)
+{
+    int *parseData = data->getPackage();
+    int second = parseData[1];
+    int minute = parseData[2];
+    int hour = parseData[3];
+    int day = parseData[4];
+    int date = parseData[5];
+    int month = parseData[6];
+    int year = parseData[7];
+    if (Firebase.RTDB.setInt(&mFbdo, ALLTIME_DATA_SECOND_PATH, second)) {
+        Serial.println("Sended SECOND DATA");
+    }
+    else {
+        Serial.println("FAILED");
+        Serial.println("REASON: " + mFbdo.errorReason());
+        return;
+    }
+    if(Firebase.RTDB.setInt(&mFbdo, ALLTIME_DATA_MINUTE_PATH, minute)) {
+        Serial.println("Sended MINUTE DATA");
+    }
+    else {
+        Serial.println("FAILED");
+        Serial.println("REASON: " + mFbdo.errorReason());
+        return;
+    }
+    if(Firebase.RTDB.setInt(&mFbdo, ALLTIME_DATA_HOUR_PATH, hour)) {
+        Serial.println("Sended HOUR DATA");
+    }
+    else {
+        Serial.println("FAILED");
+        Serial.println("REASON: " + mFbdo.errorReason());
+        return;
+    }
+    if(Firebase.RTDB.setInt(&mFbdo, ALLTIME_DATA_DAY_PATH, day)) {
+        Serial.println("Sended DAY DATA");
+    }
+    else {
+        Serial.println("FAILED");
+        Serial.println("REASON: " + mFbdo.errorReason());
+        return;
+    }
+    if(Firebase.RTDB.setInt(&mFbdo, ALLTIME_DATA_DATE_PATH, date)) {
+        Serial.println("Sended DATE DATA");
+    }
+    else {
+        Serial.println("FAILED");
+        Serial.println("REASON: " + mFbdo.errorReason());
+        return;
+    }
+    if(Firebase.RTDB.setInt(&mFbdo, ALLTIME_DATA_MONTH_PATH, month)) {
+        Serial.println("Sended MONTH DATA");
+    }
+    else {
+        Serial.println("FAILED");
+        Serial.println("REASON: " + mFbdo.errorReason());
+        return;
+    }
+    if(Firebase.RTDB.setInt(&mFbdo, ALLTIME_DATA_YEAR_PATH, year)) {
+        Serial.println("Sended YEAR DATA");
+    }
+    else {
+        Serial.println("FAILED");
+        Serial.println("REASON: " + mFbdo.errorReason());
+        return;
+    }
+
+    if (Firebase.RTDB.setInt(&mFbdo, ALLTIME_COMMAND_PATH, 0)) {
+        Serial.println("Sended ALLTIME COMMAND DATA");
+    }
+    else {
+        Serial.println("FAILED");
+        Serial.println("REASON: " + mFbdo.errorReason());
+        return;
     }
 }

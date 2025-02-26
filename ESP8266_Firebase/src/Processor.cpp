@@ -25,7 +25,7 @@ void Processor::init()
 void Processor::run()
 {
     mSERIAL->listen();
-    if(mFlagConnectFirebase == 1)
+    if (mFlagConnectFirebase == 1)
     {
         mWIFI->handleSignal(SignalType::CHECK_COMMAND_FIREBASE);
     }
@@ -43,7 +43,7 @@ void Processor::handleSignal(const SignalType signal, Package *data)
         mSERIAL->handleSignal(SignalType::CONNECT_WIFI_FAILED);
         break;
     case SignalType::CONNECT_WIFI_SUCCESSFULL:
-        mSERIAL->handleSignal(SignalType::CONNECT_WIFI_FAILED);
+        mSERIAL->handleSignal(SignalType::CONNECT_WIFI_SUCCESSFULL);
         break;
     case SignalType::STATUS_FIREBASE:
         mWIFI->handleSignal(SignalType::STATUS_FIREBASE);
@@ -67,8 +67,11 @@ void Processor::handleSignal(const SignalType signal, Package *data)
         mFlagConnectNTP = 1;
         mSERIAL->handleSignal(SignalType::CONNECT_NTP_SUCCESSFULL);
         break;
-    case SignalType::REQUEST_ALLTIME_DATA:
-        mSERIAL->handleSignal(SignalType::REQUEST_ALLTIME_DATA);
+    case SignalType::WEB_GET_ALLTIME_DATA_REQUEST:
+        mSERIAL->handleSignal(SignalType::WEB_GET_ALLTIME_DATA_REQUEST);
+        break;
+    case SignalType::WEB_GET_ALLTIME_DATA_RESPONSE:
+        mWIFI->handleSignal(SignalType::WEB_GET_ALLTIME_DATA_RESPONSE, data);
         break;
     default:
         break;

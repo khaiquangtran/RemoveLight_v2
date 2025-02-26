@@ -181,6 +181,11 @@ void RTC::handleSignal(const SignaLType signal, Package *data)
 			mRML->handleSignal(SignaLType::LCD_MENU_MODE_BACK, &data);
 			break;
 		}
+		case SignaLType::WEB_GET_ALLTIME_DATA_REQUEST:
+		{
+			sendAllTimeDataToWeb();
+			break;
+		}
 		default:
 		{
 			LOGW("Signal is not supported yet.");
@@ -217,10 +222,8 @@ uint8_t RTC::decToHex(uint8_t val)
 
 struct TimeDS1307 RTC::getTimeData()
 {
-	struct TimeDS1307 data
-	{
-		0U, 0U, 0U, 0U, 0U, 0U, 0U
-	};
+	struct TimeDS1307 data{
+		0U, 0U, 0U, 0U, 0U, 0U, 0U};
 	if (mDS1307Addr == 0)
 	{
 		return data;
@@ -252,10 +255,8 @@ struct TimeDS1307 RTC::getTimeData()
 
 struct TimeOfLight RTC::getTimeOfLight(uint8_t reg)
 {
-	struct TimeOfLight data
-	{
-		0U, 0U, 0U, 0U
-	};
+	struct TimeOfLight data{
+		0U, 0U, 0U, 0U};
 	if (mDS1307Addr == 0)
 	{
 		return data;
@@ -400,10 +401,8 @@ void RTC::setTimeLight(String light, struct TimeOfLight time, struct REG_TIME_LI
 
 struct TimeOfLight RTC::getTimeLight(String light, uint8_t reg)
 {
-	struct TimeOfLight time
-	{
-		0U, 0U, 0U, 0U
-	};
+	struct TimeOfLight time{
+		0U, 0U, 0U, 0U};
 	if (light == "Light1" || light == "Light2" || light == "Light3" || light == "Light4")
 	{
 		LOGI("%s reg %d", light, reg);
@@ -891,4 +890,25 @@ void RTC::sendTimeOfLight()
 	arr[8] = mTimeOfLight[LISTLIGHT[mIndexListLight]].second.second.second;
 	Package data(arr, sizeof(arr) / sizeof(int));
 	mRML->handleSignal(SignaLType::LCD_MENU_MODE_OK, &data);
+}
+
+void RTC::sendAllTimeDataToWeb()
+{
+	int size = sizeof(TimeDS1307) - 1;
+	int data[size];
+	data[0] = static_cast<int>(mAllTimeData.second);
+	data[1] = static_cast<int>(mAllTimeData.minute);
+	data[2] = static_cast<int>(mAllTimeData.hour);
+	data[3] = static_cast<int>(mAllTimeData.day);
+	data[4] = static_cast<int>(mAllTimeData.date);
+	data[5] = static_cast<int>(mAllTimeData.month);
+	data[6] = static_cast<int>(mAllTimeData.year);
+
+	for(int i = 0 ; i < 7; i++)
+	{
+		LOGI("%d",data[i]);
+	}
+	Package package(data, size);
+
+	mRML->handleSignal(SignaLType::WEB_GET_ALLTIME_DATA_RESPONSE, &package);
 }

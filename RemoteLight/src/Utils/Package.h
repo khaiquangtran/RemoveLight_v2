@@ -14,7 +14,7 @@ public:
 
   ~Package()
   {
-    delete mData;
+    delete[] mData;
   }
 
   int *getPackage()

@@ -40,9 +40,9 @@ private:
     void connectWifi();
     void checkConnectNTP();
     void checkCommandFirebase();
+    void sendAllTimeDatatoWeb(Package *data);
 
     int8_t mCommandAllTimerFlag;
-    const String mCommandAllTimerPath = "allTime/command";
 };
 
 #endif // WIFIPARTNER_H

@@ -63,7 +63,7 @@ private:
 	const uint16_t DELAY_3S  = 3000U;
 	const uint16_t DELAY_5S  = 5000U;
 	const uint8_t REPEATS_30  = 30U;
-	const uint8_t REPEATS_10  = 1U;
+	const uint8_t REPEATS_10  = 10U;
 
 	uint8_t mCounterConnectWifi;
 	uint8_t mCounterDisplayAllTime;

@@ -39,6 +39,7 @@ private:
 	void increaseValueOfMenuMode();
 	void decreaseValueOfMenuMode();
 	void sendTimeOfLight();
+	void sendAllTimeDataToWeb();
 	struct TimeOfLight getTimeOfLight(uint8_t reg);
 
 	uint8_t mDS1307Addr;

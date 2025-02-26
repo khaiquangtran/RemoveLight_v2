@@ -58,6 +58,7 @@ private:
 	std::shared_ptr<Timer> mTimerConnectWifi;
 	std::shared_ptr<Timer> mTimerDisplayAll;
 	std::shared_ptr<Timer> mTimerDisplaySetupMode;
+	std::shared_ptr<Timer> mTimerCheckConfiguredTimeForLight;
 
 	const uint16_t DELAY_1S  = 1000U;
 	const uint16_t DELAY_3S  = 3000U;
@@ -67,9 +68,11 @@ private:
 
 	uint8_t mCounterConnectWifi;
 	uint8_t mCounterDisplayAllTime;
+	bool mCheckConfiguredTimeForLight;
 
 	std::mutex mMutex;
 	std::mutex mMutex2;
+	std::mutex mMutex3;
 
 	int8_t mFlagConnectFirebase;
 	int8_t mFlagConnectNTP;
@@ -88,6 +91,9 @@ private:
 
 	void setStateConnect(const STATE_CONNECT state);
 	STATE_CONNECT getStateConnect();
+
+	void setCheckConfiguredTimeForLight(const bool state);
+	bool getCheckConfiguredTimeForLight();
 };
 
 #endif // ! REMOTE_LIGHT_H

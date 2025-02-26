@@ -186,6 +186,16 @@ void RTC::handleSignal(const SignaLType signal, Package *data)
 			sendAllTimeDataToWeb();
 			break;
 		}
+		case SignaLType::RTC_CHECK_CONFIGURED_TIME_FOR_LIGHT:
+		{
+			checkConfigureTimeForLight();
+			break;
+		}
+		case SignaLType::WEB_SET_ALLTIME_DATA_REQUEST:
+		{
+			requestSetTimeAllData(data);
+			break;
+		}
 		default:
 		{
 			LOGW("Signal is not supported yet.");
@@ -306,7 +316,7 @@ void RTC::writeData(uint8_t reg, uint8_t data)
 	delay(10);
 }
 
-void RTC::setTimeData(struct TimeDS1307 data)
+bool RTC::setTimeData(struct TimeDS1307 data)
 {
 	if (data.second >= 0U && data.second <= 59U)
 	{
@@ -316,6 +326,7 @@ void RTC::setTimeData(struct TimeDS1307 data)
 	else
 	{
 		LOGW("Second data is invalid!!!");
+		return false;
 	}
 
 	if (data.minute >= 0U && data.minute <= 59U)
@@ -326,6 +337,7 @@ void RTC::setTimeData(struct TimeDS1307 data)
 	else
 	{
 		LOGW("Minute data is invalid!!!");
+		return false;
 	}
 
 	if (data.hour >= 1U && data.hour <= 23U)
@@ -336,6 +348,7 @@ void RTC::setTimeData(struct TimeDS1307 data)
 	else
 	{
 		LOGW("Hour data is invalid!!!");
+		return false;
 	}
 
 	if (data.day >= 1U && data.day <= 7U)
@@ -346,6 +359,7 @@ void RTC::setTimeData(struct TimeDS1307 data)
 	else
 	{
 		LOGW("Day data is invalid!!!");
+		return false;
 	}
 
 	if (data.date >= 1U && data.date <= 31U)
@@ -356,6 +370,7 @@ void RTC::setTimeData(struct TimeDS1307 data)
 	else
 	{
 		LOGW("Date data is invalid!!!");
+		return false;
 	}
 
 	if (data.month >= 1U && data.month <= 12U)
@@ -366,6 +381,7 @@ void RTC::setTimeData(struct TimeDS1307 data)
 	else
 	{
 		LOGW("Month data is invalid!!!");
+		return false;
 	}
 
 	if (data.year >= 2000U && data.year <= 2099U)
@@ -376,7 +392,9 @@ void RTC::setTimeData(struct TimeDS1307 data)
 	else
 	{
 		LOGW("Year data is invalid!!!");
+		return false;
 	}
+	return true;
 }
 
 void RTC::setTimeLight(String light, struct TimeOfLight time, struct REG_TIME_LIGHT reg)
@@ -911,4 +929,78 @@ void RTC::sendAllTimeDataToWeb()
 	Package package(data, size);
 
 	mRML->handleSignal(SignaLType::WEB_GET_ALLTIME_DATA_RESPONSE, &package);
+}
+
+void RTC::checkConfigureTimeForLight()
+{
+	mAllTimeData = getTimeData();
+	std::map<String, LightMapValue>::iterator it;
+	for (it = mTimeOfLight.begin(); it != mTimeOfLight.end(); it++)
+	{
+		if(it->second.first.second.sw != 0 && it->second.first.second.hour == mAllTimeData.hour &&
+			it->second.first.second.minute == mAllTimeData.minute && it->second.first.second.second == mAllTimeData.second)
+		{
+			if(it->first == "Light1") {
+				mRML->handleSignal(SignaLType::RTC_TURN_ON_LIGHT1);
+			}
+			else if(it->first == "Light2") {
+				mRML->handleSignal(SignaLType::RTC_TURN_ON_LIGHT2);
+			}
+			else if(it->first == "Light3") {
+				mRML->handleSignal(SignaLType::RTC_TURN_ON_LIGHT3);
+			}
+			else if(it->first == "Light4") {
+				mRML->handleSignal(SignaLType::RTC_TURN_ON_LIGHT4);
+			}
+			else
+			{
+				/*Do nothing*/
+			}
+		}
+		if(it->second.second.second.sw != 0 && it->second.second.second.hour == mAllTimeData.hour &&
+			it->second.second.second.minute == mAllTimeData.minute && it->second.second.second.second == mAllTimeData.second)
+		{
+			if(it->first == "Light1") {
+				mRML->handleSignal(SignaLType::RTC_TURN_OFF_LIGHT1);
+			}
+			else if(it->first == "Light2") {
+				mRML->handleSignal(SignaLType::RTC_TURN_OFF_LIGHT2);
+			}
+			else if(it->first == "Light3") {
+				mRML->handleSignal(SignaLType::RTC_TURN_OFF_LIGHT3);
+			}
+			else if(it->first == "Light4") {
+				mRML->handleSignal(SignaLType::RTC_TURN_OFF_LIGHT4);
+			}
+			else
+			{
+				/*Do nothing*/
+			}
+		}
+	}
+}
+
+void RTC::requestSetTimeAllData(Package *data)
+{
+	int *parseData  = data->getPackage();
+	if(data->getSize() == 8)
+    {
+		TimeDS1307 data;
+		data.second      = parseData[1];
+        data.minute      = parseData[2];
+        data.hour        = parseData[3];
+        data.day         = parseData[4];
+        data.date        = parseData[5];
+        data.month       = parseData[6];
+        data.year        = parseData[7];
+
+		int result = false;
+		result = setTimeData(data);
+		if(result) {
+			mRML->handleSignal(SignaLType::WEB_SET_ALLTIME_DATA_RESPONSE);
+		}
+	}
+	else {
+		LOGE("Lenght is invalid!!!");
+	}
 }

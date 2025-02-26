@@ -6,17 +6,19 @@ SerialPartner::SerialPartner(RemoteLight *rml) : mRML(rml)
     Serial.begin(BAUD_RATE);
     Serial2.begin(BAUD_RATE, SERIAL_8N1, RXD2, TXD2);
 
-    mCommandHandle[COMMAND::STATUS_WIFI] = "0001";
-    mCommandHandle[COMMAND::STATUS_FIREBASE] = "0002";
-    mCommandHandle[COMMAND::STATUS_NTP] = "0003";
-    mCommandHandle[COMMAND::WIFI_SUCCESSFULL] = "1001";
-    mCommandHandle[COMMAND::WIFI_FAILED] = "1002";
-    mCommandHandle[COMMAND::FIREBASE_SUCCESSFULL] = "2002";
-    mCommandHandle[COMMAND::FIREBASE_FAILED] = "2003";
-    mCommandHandle[COMMAND::NTP_SUCCESSFULL] = "3002";
-    mCommandHandle[COMMAND::NTP_FAILED] = "3003";
-    mCommandHandle[COMMAND::WEB_GET_ALLTIME_DATA_REQUEST] = "4004";
-    mCommandHandle[COMMAND::WEB_GET_ALLTIME_DATA_RESPONSE] = "4005";
+    mCommandHandle[COMMAND::STATUS_WIFI]                        = "0001";
+    mCommandHandle[COMMAND::STATUS_FIREBASE]                    = "0002";
+    mCommandHandle[COMMAND::STATUS_NTP]                         = "0003";
+    mCommandHandle[COMMAND::WIFI_SUCCESSFULL]                   = "1001";
+    mCommandHandle[COMMAND::WIFI_FAILED]                        = "1002";
+    mCommandHandle[COMMAND::FIREBASE_SUCCESSFULL]               = "2002";
+    mCommandHandle[COMMAND::FIREBASE_FAILED]                    = "2003";
+    mCommandHandle[COMMAND::NTP_SUCCESSFULL]                    = "3002";
+    mCommandHandle[COMMAND::NTP_FAILED]                         = "3003";
+    mCommandHandle[COMMAND::WEB_GET_ALLTIME_DATA_REQUEST]       = "4004";
+    mCommandHandle[COMMAND::WEB_GET_ALLTIME_DATA_RESPONSE]      = "4005";
+    mCommandHandle[COMMAND::WEB_SET_ALLTIME_DATA_REQUEST]       = "4006";
+    mCommandHandle[COMMAND::WEB_SET_ALLTIME_DATA_RESPONSE]      = "4007";
 
     LOGI("Initialization SerialPartner!");
 }
@@ -50,7 +52,7 @@ void SerialPartner::handleSignal(const SignaLType signal, Package *data)
         }
         else
         {
-            LOGD("Command STATUS_WIFI is incomplete!)");
+            LOGE("Command STATUS_WIFI is incomplete!)");
         }
         break;
     }
@@ -64,7 +66,7 @@ void SerialPartner::handleSignal(const SignaLType signal, Package *data)
         }
         else
         {
-            LOGD("Command STATUS_FIREBASE is incomplete!)");
+            LOGE("Command STATUS_FIREBASE is incomplete!)");
         }
         break;
     }
@@ -78,7 +80,7 @@ void SerialPartner::handleSignal(const SignaLType signal, Package *data)
         }
         else
         {
-            LOGD("Command STATUS_NTP is incomplete!)");
+            LOGE("Command STATUS_NTP is incomplete!)");
         }
         break;
     }
@@ -90,15 +92,20 @@ void SerialPartner::handleSignal(const SignaLType signal, Package *data)
         {
             command += String(" ") + String(pack[i]);
         }
-        LOGD(command.c_str());
-        if (command.length() != 0)
-        {
+        // Format: command second minute hour day date month year
+        //          xxxx   xx     xx     xx   xx  xx   xx    xxxx
+        Serial2.write(command.c_str());
+        // LOGD("Send STATUS_NTP");
+        break;
+    }
+    case (SignaLType::WEB_SET_ALLTIME_DATA_RESPONSE):
+    {
+        String command = mCommandHandle[COMMAND::WEB_SET_ALLTIME_DATA_RESPONSE];
+        if (command.length() != 0) {
             Serial2.write(command.c_str());
-            // LOGD("Send STATUS_NTP");
         }
-        else
-        {
-            LOGD("Command STATUS_NTP is incomplete!)");
+        else {
+            LOGE("Command WEB_SET_ALLTIME_DATA_RESPONSE is incomplete!)");
         }
         break;
     }
@@ -139,4 +146,32 @@ void SerialPartner::handleMessage(String receiverData)
     {
         mRML->handleSignal(SignaLType::WEB_GET_ALLTIME_DATA_REQUEST);
     }
+    else if (command == mCommandHandle[COMMAND::WEB_SET_ALLTIME_DATA_REQUEST])
+    {
+        int size = 0;
+        LOGD(receiverData.c_str());
+        int *data = parseCommandStringToArray(receiverData, size);
+        Package *package = new Package(data, size);
+        mRML->handleSignal(SignaLType::WEB_SET_ALLTIME_DATA_REQUEST, package);
+        delete[] data;
+        delete package;
+    }
+}
+
+int *SerialPartner::parseCommandStringToArray(String str, int &size)
+{
+    char cstr[100];
+    str.toCharArray(cstr, 50);
+
+    char *pch;
+    int *pnum = new int[10];
+    int index = 0;
+    pch = strtok(cstr, " ");
+    while (pch != NULL)
+    {
+      pnum[index++] = atoi(pch);
+      pch = strtok(NULL, " ");
+    }
+    size = index;
+    return pnum;
 }

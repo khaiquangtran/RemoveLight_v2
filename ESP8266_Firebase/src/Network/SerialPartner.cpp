@@ -6,17 +6,19 @@ SerialPartner::SerialPartner(Processor *processor) : mProcessor(processor)
     mSerial2 = new SoftwareSerial(RXD2, TXD2);
     mSerial2->begin(BAUD_RATE);
 
-    mCommandHandle[COMMAND::STATUS_WIFI] = "0001";
-    mCommandHandle[COMMAND::STATUS_FIREBASE] = "0002";
-    mCommandHandle[COMMAND::STATUS_NTP] = "0003";
-    mCommandHandle[COMMAND::WIFI_SUCCESSFULL] = "1001";
-    mCommandHandle[COMMAND::WIFI_FAILED] = "1002";
-    mCommandHandle[COMMAND::FIREBASE_SUCCESSFULL] = "2002";
-    mCommandHandle[COMMAND::FIREBASE_FAILED] = "2003";
-    mCommandHandle[COMMAND::NTP_SUCCESSFULL] = "3002";
-    mCommandHandle[COMMAND::NTP_FAILED] = "3003";
-    mCommandHandle[COMMAND::WEB_GET_ALLTIME_DATA_REQUEST] = "4004";
-    mCommandHandle[COMMAND::WEB_GET_ALLTIME_DATA_RESPONSE] = "4005";
+    mCommandHandle[COMMAND::STATUS_WIFI]                    = "0001";
+    mCommandHandle[COMMAND::STATUS_FIREBASE]                = "0002";
+    mCommandHandle[COMMAND::STATUS_NTP]                     = "0003";
+    mCommandHandle[COMMAND::WIFI_SUCCESSFULL]               = "1001";
+    mCommandHandle[COMMAND::WIFI_FAILED]                    = "1002";
+    mCommandHandle[COMMAND::FIREBASE_SUCCESSFULL]           = "2002";
+    mCommandHandle[COMMAND::FIREBASE_FAILED]                = "2003";
+    mCommandHandle[COMMAND::NTP_SUCCESSFULL]                = "3002";
+    mCommandHandle[COMMAND::NTP_FAILED]                     = "3003";
+    mCommandHandle[COMMAND::WEB_GET_ALLTIME_DATA_REQUEST]   = "4004";
+    mCommandHandle[COMMAND::WEB_GET_ALLTIME_DATA_RESPONSE]  = "4005";
+    mCommandHandle[COMMAND::WEB_SET_ALLTIME_DATA_REQUEST]   = "4006";
+    mCommandHandle[COMMAND::WEB_SET_ALLTIME_DATA_RESPONSE]  = "4007";
 }
 
 SerialPartner::~SerialPartner()
@@ -79,6 +81,17 @@ void SerialPartner::handleSignal(const SignalType signal, Package *data)
         mSerial2->write(mCommandHandle[COMMAND::WEB_GET_ALLTIME_DATA_REQUEST].c_str());
         break;
     }
+    case SignalType::WEB_SET_ALLTIME_DATA_REQUEST:
+    {
+        int *pack = data->getPackage();
+        String command = mCommandHandle[COMMAND::WEB_SET_ALLTIME_DATA_REQUEST];
+        for(int i = 0; i < data->getSize(); i++)
+        {
+            command += String(" ") + String(pack[i]);
+        }
+        mSerial2->write(command.c_str());
+        break;
+    }
     default:
         break;
     }
@@ -105,6 +118,10 @@ void SerialPartner::handleMessage(String receiverData)
         int *data = parseCommandStringToArray(receiverData, size);
         Package *package = new Package(data, size);
         mProcessor->handleSignal(SignalType::WEB_GET_ALLTIME_DATA_RESPONSE, package);
+    }
+    else if (command == mCommandHandle[COMMAND::WEB_SET_ALLTIME_DATA_RESPONSE])
+    {
+        mProcessor->handleSignal(SignalType::WEB_SET_ALLTIME_DATA_RESPONSE);
     }
 }
 

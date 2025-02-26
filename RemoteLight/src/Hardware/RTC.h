@@ -27,7 +27,7 @@ private:
 	byte decToHex(byte val);
 	void writeData(uint8_t reg, uint8_t data);
 	struct TimeDS1307 getTimeData();
-	void setTimeData(struct TimeDS1307 data);
+	bool setTimeData(struct TimeDS1307 data);
 	struct TimeOfLight getTimeLight(String light, uint8_t reg);
 	void setTimeLight(String light, struct TimeOfLight time, struct REG_TIME_LIGHT reg);
 
@@ -41,6 +41,8 @@ private:
 	void sendTimeOfLight();
 	void sendAllTimeDataToWeb();
 	struct TimeOfLight getTimeOfLight(uint8_t reg);
+	void checkConfigureTimeForLight();
+	void requestSetTimeAllData(Package *data);
 
 	uint8_t mDS1307Addr;
 	std::map<String, LightMapValue> mTimeOfLight;

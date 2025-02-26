@@ -41,6 +41,7 @@ private:
     void checkConnectNTP();
     void checkCommandFirebase();
     void sendAllTimeDatatoWeb(Package *data);
+    void sendResponseSetAllTimeDatatoWeb();
 
     int8_t mCommandAllTimerFlag;
 };

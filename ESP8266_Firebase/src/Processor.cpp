@@ -73,6 +73,12 @@ void Processor::handleSignal(const SignalType signal, Package *data)
     case SignalType::WEB_GET_ALLTIME_DATA_RESPONSE:
         mWIFI->handleSignal(SignalType::WEB_GET_ALLTIME_DATA_RESPONSE, data);
         break;
+    case SignalType::WEB_SET_ALLTIME_DATA_REQUEST:
+        mSERIAL->handleSignal(SignalType::WEB_SET_ALLTIME_DATA_REQUEST, data);
+        break;
+    case SignalType::WEB_SET_ALLTIME_DATA_RESPONSE:
+        mWIFI->handleSignal(SignalType::WEB_SET_ALLTIME_DATA_RESPONSE);
+        break;
     default:
         break;
     }

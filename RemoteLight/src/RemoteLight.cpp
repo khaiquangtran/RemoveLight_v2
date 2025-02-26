@@ -11,6 +11,7 @@ RemoteLight::RemoteLight()
 
 	setControlMode(CONTROL_MODE::NONE);
 	setStateConnect(STATE_CONNECT::NOK);
+	setCheckConfiguredTimeForLight(false);
 
 	mCounterConnectWifi = 0;
 	mCounterDisplayAllTime = 0;
@@ -18,7 +19,7 @@ RemoteLight::RemoteLight()
 	mFlagConnectFirebase = 0;
 	mFlagConnectNTP = 0;
 
-	mTimerMgr = std::make_shared<TimerManager>(3);
+	mTimerMgr = std::make_shared<TimerManager>(4);
 	mTimerConnectWifi = mTimerMgr->createTimer([this]()
 											   { this->onTimeout(SignaLType::TIMER_CONNECT_WIFI_SIGNAL); }, DELAY_3S);
 
@@ -27,6 +28,9 @@ RemoteLight::RemoteLight()
 
 	mTimerDisplaySetupMode = mTimerMgr->createTimer([this]()
 													{ this->onTimeout(SignaLType::TIMER_DISPLAY_ALL_SETUP_MODE_SIGNAL); }, DELAY_3S);
+
+	mTimerCheckConfiguredTimeForLight = mTimerMgr->createTimer([this]()
+															{ this->onTimeout(SignaLType::TIMER_CHECK_CONFIGURED_TIME_FOR_LIGHT); }, DELAY_1S);
 	LOGI("Initialization RemoteLight!");
 }
 
@@ -53,6 +57,14 @@ void RemoteLight::handleSignal(const SignaLType signal, Package *data)
 	case (SignaLType::IR_BTN_2_SIGNAL):
 	case (SignaLType::IR_BTN_3_SIGNAL):
 	case (SignaLType::IR_BTN_4_SIGNAL):
+	case (SignaLType::RTC_TURN_ON_LIGHT1):
+	case (SignaLType::RTC_TURN_ON_LIGHT2):
+	case (SignaLType::RTC_TURN_ON_LIGHT3):
+	case (SignaLType::RTC_TURN_ON_LIGHT4):
+	case (SignaLType::RTC_TURN_OFF_LIGHT1):
+	case (SignaLType::RTC_TURN_OFF_LIGHT2):
+	case (SignaLType::RTC_TURN_OFF_LIGHT3):
+	case (SignaLType::RTC_TURN_OFF_LIGHT4):
 	{
 		mLIGHT->handleSignal(signal);
 		break;
@@ -241,6 +253,22 @@ void RemoteLight::handleSignal(const SignaLType signal, Package *data)
 		mSerial->handleSignal(SignaLType::WEB_GET_ALLTIME_DATA_RESPONSE, data);
 		break;
 	}
+	case (SignaLType::WEB_SET_ALLTIME_DATA_REQUEST):
+	{
+		mRTC->handleSignal(SignaLType::WEB_SET_ALLTIME_DATA_REQUEST, data);
+		break;
+	}
+	case (SignaLType::WEB_SET_ALLTIME_DATA_RESPONSE):
+	{
+		mSerial->handleSignal(SignaLType::WEB_SET_ALLTIME_DATA_RESPONSE);
+		if(mCounterDisplayAllTime > 25 || mCounterDisplayAllTime == 0)
+		{
+			mCounterDisplayAllTime = 0;
+			mLCD->handleSignal(SignaLType::LCD_TURN_ON_LIGHT);
+			setControlMode(CONTROL_MODE::DISPLAY_ALL);
+		}
+		break;
+	}
 	default:
 	{
 		LOGW("Signal is not supported yet.");
@@ -284,6 +312,12 @@ void RemoteLight::run()
 	}
 	default:
 		break;
+	}
+
+	if(getCheckConfiguredTimeForLight()== true)
+	{
+		setCheckConfiguredTimeForLight(false);
+		mRTC->handleSignal(SignaLType::RTC_CHECK_CONFIGURED_TIME_FOR_LIGHT);
 	}
 }
 
@@ -334,8 +368,7 @@ void RemoteLight::displayEndSetupMode()
 {
 	setControlMode(CONTROL_MODE::NONE);
 	mTimerDisplaySetupMode->updateTimer(
-		[this]()
-		{ this->onTimeout(SignaLType::TIMER_DISPLAY_ALL_END_SETUP_MODE_SIGNAL); }, DELAY_3S);
+		[this]() { this->onTimeout(SignaLType::TIMER_DISPLAY_ALL_END_SETUP_MODE_SIGNAL); }, DELAY_3S);
 	mTimerDisplaySetupMode->startTimer();
 }
 
@@ -425,6 +458,9 @@ void RemoteLight::onTimeout(const SignaLType signal)
 		mLCD->handleSignal(SignaLType::LCD_CLEAR_SCREEN);
 		setControlMode(CONTROL_MODE::DISPLAY_ALL);
 		break;
+	case SignaLType::TIMER_CHECK_CONFIGURED_TIME_FOR_LIGHT:
+		setCheckConfiguredTimeForLight(true);
+		break;
 	default:
 		break;
 	}
@@ -458,4 +494,16 @@ void RemoteLight::intoSetupMode()
 {
 	setControlMode(CONTROL_MODE::INTO_SETUP_MODE);
 	mRTC->handleSignal(SignaLType::RTC_DISPLAY_ALL_TIME);
+}
+
+void RemoteLight::setCheckConfiguredTimeForLight(const bool state)
+{
+	std::unique_lock<std::mutex> lock(mMutex3);
+	mCheckConfiguredTimeForLight = state;
+}
+
+bool RemoteLight::getCheckConfiguredTimeForLight()
+{
+	std::unique_lock<std::mutex> lock(mMutex3);
+	return mCheckConfiguredTimeForLight;
 }

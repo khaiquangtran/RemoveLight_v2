@@ -33,6 +33,8 @@ public:
         NTP_FAILED,
         WEB_GET_ALLTIME_DATA_REQUEST,
         WEB_GET_ALLTIME_DATA_RESPONSE,
+        WEB_SET_ALLTIME_DATA_REQUEST,
+        WEB_SET_ALLTIME_DATA_RESPONSE,
         SSID,
         PASSWORD,
     };
@@ -44,6 +46,7 @@ private:
     const int BAUD_RATE = 115200;
 
     void handleMessage(String receiverData);
+    int *parseCommandStringToArray(String str, int &size);
 
     std::map<COMMAND, String> mCommandHandle;
 };

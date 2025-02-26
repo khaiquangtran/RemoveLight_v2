@@ -1,5 +1,5 @@
-#ifndef SignalType_H
-#define SignalType_H
+#ifndef SIGNALTYPE_H
+#define SIGNALTYPE_H
 
 #include <iostream>
 
@@ -22,6 +22,8 @@ enum SignalType : uint16_t
     WEB_GET_ALLTIME_DATA_REQUEST,
     WEB_GET_ALLTIME_DATA_RESPONSE,
 
+    WEB_SET_ALLTIME_DATA_REQUEST,
+    WEB_SET_ALLTIME_DATA_RESPONSE,
 };
 
-#endif // SignalType_H
+#endif // SIGNALTYPE_H

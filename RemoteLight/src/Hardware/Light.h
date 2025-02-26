@@ -17,7 +17,7 @@ public:
   void handleSignal(const SignaLType signal, Package *data = nullptr);
 
 private:
-  void controlLight(uint8_t light);
+  void controlLight(uint8_t light, uint8_t state = 3);
 
   RemoteLight *mRML;
   const uint8_t Light1 = 18U;

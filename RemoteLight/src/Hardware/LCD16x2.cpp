@@ -100,36 +100,24 @@ void LCD16x2::handleSignal(const SignaLType signal, Package *data)
 			break;
 		}
 		case (SignaLType::LCD_CLEAR_TURN_OFF_SCREEN):
-		{
 			mLCD->clear();
 			mLCD->noBacklight();
 			break;
-		}
 		case (SignaLType::LCD_CLEAR_SCREEN):
-		{
 			mLCD->clear();
 			break;
-		}
 		case (SignaLType::IR_BTN_APP_SIGNAL):
-		{
 			displayStartSetupMode();
 			break;
-		}
 		case (SignaLType::LCD_TURN_ON_LIGHT):
-		{
 			mLCD->backlight();
 			break;
-		}
 		case (SignaLType::LCD_DISPLAY_END_SETUP_MODE):
-		{
 			displayEndSetupMode();
 			break;
-		}
 		case (SignaLType::IR_BTN_MENU_SIGNAL):
-		{
 			displayMenuMode(0);
 			break;
-		}
 		case (SignaLType::LCD_MENU_MODE_BACK):
 		case (SignaLType::LCD_MOVE_RIGHT_MENU_MODE):
 		case (SignaLType::LCD_MOVE_LEFT_MENU_MODE):
@@ -145,73 +133,49 @@ void LCD16x2::handleSignal(const SignaLType signal, Package *data)
 			break;
 		}
 		case (SignaLType::LCD_DISPLAY_START_CONNECT_WIFI):
-		{
 			displayStartConnectWifi();
 			break;
-		}
 		case (SignaLType::LCD_DISPLAY_CONNECT_WIFI):
-		{
 			displayConnectingWifi();
 			break;
-		}
 		case (SignaLType::LCD_CONNECT_WIFI_SUCCESS):
-		{
 			displayConnectWifiSuccess();
 			break;
-		}
 		case (SignaLType::LCD_CONNECT_WIFI_FAILED):
-		{
 			displayConnectWifiFailed();
 			break;
-		}
 		case (SignaLType::LCD_DISPLAY_START_CONNECT_FIREBASE):
-		{
 			displayStartConnectFirebase();
 			break;
-		}
 		case (SignaLType::LCD_DISPLAY_START_CONNECT_NTP):
-		{
 			displayStartConnectNTP();
 			break;
-		}
 		case (SignaLType::LCD_CONNECT_FIREBASE_SUCCESS):
-		{
 			displayConnectFirebaseSuccess();
 			break;
-		}
 		case (SignaLType::LCD_CONNECT_NTP_SUCCESS):
-		{
 			displayConnectNTPSuccess();
 			break;
-		}
 		case (SignaLType::LCD_CONNECT_FIREBASE_FAILED):
-		{
 			displayConnectFBFailed();
 			break;
-		}
 		case (SignaLType::LCD_CONNECT_NTP_FAILED):
-		{
 			displayConnectNTPFailed();
 			break;
-		}
 		default:
-		{
 			LOGW("Signal is not supported yet.");
 			break;
-		}
 		}
 	}
 }
 
 bool LCD16x2::checkAddress()
 {
-	if (scanAddress(LCD_ADDR) == Hardware::INVALID)
-	{
+	if (scanAddress(LCD_ADDR) == Hardware::INVALID) {
 		LOGI("No find LCD");
 		return false;
 	}
-	else
-	{
+	else {
 		LOGI("Find out LCD");
 		return true;
 	}
@@ -222,14 +186,12 @@ void LCD16x2::displayTimeFromDS1307(struct TimeDS1307 data)
 	mLCD->setCursor(0, 0);
 	mLCD->print(data.day[DAY]);
 	mLCD->print(" ");
-	if (data.date < 10)
-	{
+	if (data.date < 10) {
 		mLCD->print("0");
 	}
 	mLCD->print(data.date);
 	mLCD->print("/");
-	if (data.month < 10)
-	{
+	if (data.month < 10) {
 		mLCD->print("0");
 	}
 	mLCD->print(data.month);
@@ -239,20 +201,17 @@ void LCD16x2::displayTimeFromDS1307(struct TimeDS1307 data)
 
 	mLCD->setCursor(0, 1);
 	mLCD->print("Time: ");
-	if (data.hour < 10)
-	{
+	if (data.hour < 10) {
 		mLCD->print("0");
 	}
 	mLCD->print(data.hour);
 	mLCD->print(":");
-	if (data.minute < 10)
-	{
+	if (data.minute < 10) {
 		mLCD->print("0");
 	}
 	mLCD->print(data.minute);
 	mLCD->print(":");
-	if (data.second < 10)
-	{
+	if (data.second < 10) {
 		mLCD->print("0");
 	}
 	mLCD->print(data.second);
@@ -287,25 +246,17 @@ void LCD16x2::displayMenuMode(uint8_t light)
 	switch (light)
 	{
 	case 0:
-	{
 		mLCD->print("  >1< 2  3  4   ");
 		break;
-	}
 	case 1:
-	{
 		mLCD->print("   1 >2< 3  4   ");
 		break;
-	}
 	case 2:
-	{
 		mLCD->print("   1  2 >3< 4   ");
 		break;
-	}
 	case 3:
-	{
 		mLCD->print("   1  2  3 >4<  ");
 		break;
-	}
 	default:
 		break;
 	}
@@ -317,29 +268,24 @@ void LCD16x2::displaySelectedMenuMode(int *data)
 	mLCD->setCursor(0, 0);
 	mLCD->print("ON ");
 	mLCD->print(flagChooseLight + 1);
-	if (*data++)
-	{
+	if (*data++) {
 		mLCD->print(" MO ");
 	}
-	else
-	{
+	else {
 		mLCD->print(" TAT");
 	}
 
-	if (*data < 10)
-	{
+	if (*data < 10) {
 		mLCD->print("0");
 	}
 	mLCD->print(*data++);
 	mLCD->print(":");
-	if (*data < 10)
-	{
+	if (*data < 10) {
 		mLCD->print("0");
 	}
 	mLCD->print(*data++);
 	mLCD->print(":");
-	if (*data < 10)
-	{
+	if (*data < 10) {
 		mLCD->print("0");
 	}
 	mLCD->print(*data++);
@@ -347,28 +293,23 @@ void LCD16x2::displaySelectedMenuMode(int *data)
 	mLCD->setCursor(0, 1);
 	mLCD->print("OFF");
 	mLCD->print(flagChooseLight + 1);
-	if (*data++)
-	{
+	if (*data++) {
 		mLCD->print(" MO ");
 	}
-	else
-	{
+	else {
 		mLCD->print(" TAT");
 	}
-	if (*data < 10)
-	{
+	if (*data < 10) {
 		mLCD->print("0");
 	}
 	mLCD->print(*data++);
 	mLCD->print(":");
-	if (*data < 10)
-	{
+	if (*data < 10) {
 		mLCD->print("0");
 	}
 	mLCD->print(*data++);
 	mLCD->print(":");
-	if (*data < 10)
-	{
+	if (*data < 10) {
 		mLCD->print("0");
 	}
 	mLCD->print(*data++);

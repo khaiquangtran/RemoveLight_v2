@@ -13,6 +13,9 @@ public:
     virtual void listen() {
         Serial.println("Listen");
     };
+
+protected:
+    int *parseCommandStringToArray(String str, int &size);
 };
 
 #endif // NETWORK_H

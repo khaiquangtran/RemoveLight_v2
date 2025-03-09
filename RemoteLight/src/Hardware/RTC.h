@@ -25,11 +25,11 @@ private:
 	bool checkAddress();
 	byte bcdToDec(byte val);
 	byte decToHex(byte val);
-	void writeData(uint8_t reg, uint8_t data);
+	bool writeData(uint8_t reg, uint8_t data);
 	struct TimeDS1307 getTimeData();
 	bool setTimeData(struct TimeDS1307 data);
 	struct TimeOfLight getTimeLight(String light, uint8_t reg);
-	void setTimeLight(String light, struct TimeOfLight time, struct REG_TIME_LIGHT reg);
+	bool setTimeLight(String light, struct TimeOfLight time, struct REG_TIME_LIGHT reg);
 
 	void getResponse(struct TimeOfLight *time, uint8_t REG);
 	void sendAllTimeData(const SignaLType signal);
@@ -43,6 +43,10 @@ private:
 	struct TimeOfLight getTimeOfLight(uint8_t reg);
 	void checkConfigureTimeForLight();
 	void requestSetTimeAllData(Package *data);
+	void sendLightDataToWeb(const SignaLType signal);
+	void requestSetLightData(Package *data, const SignaLType signal);
+	void receiveTimeDateFromNTP(Package *data);
+	void adjustTime();
 
 	uint8_t mDS1307Addr;
 	std::map<String, LightMapValue> mTimeOfLight;
@@ -54,6 +58,8 @@ private:
 	uint8_t mIndexLight;
 	uint8_t mCountRetry;
 	const uint8_t RETRY = 3U;
+	std::map<SignaLType, std::pair<int, SignaLType>> mLightGetRequestResponse;
+	std::map<SignaLType, std::pair<int, SignaLType>> mLightSetRequestResponse;
 };
 
 #endif // RTC_H

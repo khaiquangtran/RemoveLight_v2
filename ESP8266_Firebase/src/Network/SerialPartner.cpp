@@ -6,19 +6,51 @@ SerialPartner::SerialPartner(Processor *processor) : mProcessor(processor)
     mSerial2 = new SoftwareSerial(RXD2, TXD2);
     mSerial2->begin(BAUD_RATE);
 
-    mCommandHandle[COMMAND::STATUS_WIFI]                    = "0001";
-    mCommandHandle[COMMAND::STATUS_FIREBASE]                = "0002";
-    mCommandHandle[COMMAND::STATUS_NTP]                     = "0003";
-    mCommandHandle[COMMAND::WIFI_SUCCESSFULL]               = "1001";
-    mCommandHandle[COMMAND::WIFI_FAILED]                    = "1002";
-    mCommandHandle[COMMAND::FIREBASE_SUCCESSFULL]           = "2002";
-    mCommandHandle[COMMAND::FIREBASE_FAILED]                = "2003";
-    mCommandHandle[COMMAND::NTP_SUCCESSFULL]                = "3002";
-    mCommandHandle[COMMAND::NTP_FAILED]                     = "3003";
-    mCommandHandle[COMMAND::WEB_GET_ALLTIME_DATA_REQUEST]   = "4004";
-    mCommandHandle[COMMAND::WEB_GET_ALLTIME_DATA_RESPONSE]  = "4005";
-    mCommandHandle[COMMAND::WEB_SET_ALLTIME_DATA_REQUEST]   = "4006";
-    mCommandHandle[COMMAND::WEB_SET_ALLTIME_DATA_RESPONSE]  = "4007";
+    mCommandHandle[SignalType::STATUS_WIFI]                             = "0001";
+    mCommandHandle[SignalType::STATUS_FIREBASE]                         = "0002";
+    mCommandHandle[SignalType::STATUS_NTP]                              = "0003";
+    mCommandHandle[SignalType::CONNECT_WIFI_SUCCESSFULL]                = "1001";
+    mCommandHandle[SignalType::CONNECT_WIFI_FAILED]                     = "1002";
+    mCommandHandle[SignalType::CONNECT_FIREBASE_SUCCESSFULL]            = "2002";
+    mCommandHandle[SignalType::CONNECT_FIREBASE_FAILED]                 = "2003";
+    mCommandHandle[SignalType::CONNECT_NTP_SUCCESSFULL]                 = "3002";
+    mCommandHandle[SignalType::CONNECT_NTP_FAILED]                      = "3003";
+
+    mCommandHandle[SignalType::WEB_GET_ALLTIME_DATA_REQUEST]            = "4004";
+    mCommandHandle[SignalType::WEB_GET_ALLTIME_DATA_RESPONSE]           = "4005";
+    mCommandHandle[SignalType::WEB_SET_ALLTIME_DATA_REQUEST]            = "4006";
+    mCommandHandle[SignalType::WEB_SET_ALLTIME_DATA_RESPONSE]           = "4007";
+
+    mCommandHandle[SignalType::WEB_GET_LIGHT1_DATA_REQUEST]             = "4104";
+    mCommandHandle[SignalType::WEB_GET_LIGHT1_DATA_RESPONSE]            = "4105";
+    mCommandHandle[SignalType::WEB_SET_LIGHT1_DATA_REQUEST]             = "4106";
+    mCommandHandle[SignalType::WEB_SET_LIGHT1_DATA_RESPONSE]            = "4107";
+
+    mCommandHandle[SignalType::WEB_GET_LIGHT2_DATA_REQUEST]             = "4204";
+    mCommandHandle[SignalType::WEB_GET_LIGHT2_DATA_RESPONSE]            = "4205";
+    mCommandHandle[SignalType::WEB_SET_LIGHT2_DATA_REQUEST]             = "4206";
+    mCommandHandle[SignalType::WEB_SET_LIGHT2_DATA_RESPONSE]            = "4207";
+
+    mCommandHandle[SignalType::WEB_GET_LIGHT3_DATA_REQUEST]             = "4304";
+    mCommandHandle[SignalType::WEB_GET_LIGHT3_DATA_RESPONSE]            = "4305";
+    mCommandHandle[SignalType::WEB_SET_LIGHT3_DATA_REQUEST]             = "4306";
+    mCommandHandle[SignalType::WEB_SET_LIGHT3_DATA_RESPONSE]            = "4307";
+
+    mCommandHandle[SignalType::WEB_GET_LIGHT4_DATA_REQUEST]             = "4404";
+    mCommandHandle[SignalType::WEB_GET_LIGHT4_DATA_RESPONSE]            = "4405";
+    mCommandHandle[SignalType::WEB_SET_LIGHT4_DATA_REQUEST]             = "4406";
+    mCommandHandle[SignalType::WEB_SET_LIGHT4_DATA_RESPONSE]            = "4407";
+
+    mCommandHandle[SignalType::WEB_GET_STATUS_DATA_REQUEST]             = "4504";
+    mCommandHandle[SignalType::WEB_GET_STATUS_DATA_RESPONSE]            = "4505";
+    mCommandHandle[SignalType::WEB_SET_STATUS_LIGHT1_DATA_REQUEST]      = "4516";
+    mCommandHandle[SignalType::WEB_SET_STATUS_LIGHT2_DATA_REQUEST]      = "4526";
+    mCommandHandle[SignalType::WEB_SET_STATUS_LIGHT3_DATA_REQUEST]      = "4536";
+    mCommandHandle[SignalType::WEB_SET_STATUS_LIGHT4_DATA_REQUEST]      = "4546";
+    mCommandHandle[SignalType::WEB_SET_STATUS_LIGHT_DATA_RESPONSE]      = "4507";
+
+    mCommandHandle[SignalType::REMOTE_LIGHT_GET_TIME_DATE_FROM_NTP]     = "5000";
+    mCommandHandle[SignalType::REMOTE_LIGHT_SEND_TIME_DATE_FROM_NTP]    = "5001";
 }
 
 SerialPartner::~SerialPartner()
@@ -47,49 +79,42 @@ void SerialPartner::handleSignal(const SignalType signal, Package *data)
     switch (signal)
     {
     case SignalType::CONNECT_WIFI_SUCCESSFULL:
-    {
-        mSerial2->write(mCommandHandle[COMMAND::WIFI_SUCCESSFULL].c_str());
-        break;
-    }
     case SignalType::CONNECT_FIREBASE_SUCCESSFULL:
-    {
-        mSerial2->write(mCommandHandle[COMMAND::FIREBASE_SUCCESSFULL].c_str());
-        break;
-    }
     case SignalType::CONNECT_NTP_SUCCESSFULL:
-    {
-        mSerial2->write(mCommandHandle[COMMAND::NTP_SUCCESSFULL].c_str());
-        break;
-    }
     case SignalType::CONNECT_WIFI_FAILED:
-    {
-        mSerial2->write(mCommandHandle[COMMAND::WIFI_FAILED].c_str());
-        break;
-    }
     case SignalType::CONNECT_FIREBASE_FAILED:
-    {
-        mSerial2->write(mCommandHandle[COMMAND::FIREBASE_FAILED].c_str());
-        break;
-    }
     case SignalType::CONNECT_NTP_FAILED:
-    {
-        mSerial2->write(mCommandHandle[COMMAND::NTP_FAILED].c_str());
-        break;
-    }
     case SignalType::WEB_GET_ALLTIME_DATA_REQUEST:
+    case SignalType::WEB_GET_LIGHT1_DATA_REQUEST:
+    case SignalType::WEB_GET_LIGHT2_DATA_REQUEST:
+    case SignalType::WEB_GET_LIGHT3_DATA_REQUEST:
+    case SignalType::WEB_GET_LIGHT4_DATA_REQUEST:
+    case SignalType::WEB_GET_STATUS_DATA_REQUEST:
     {
-        mSerial2->write(mCommandHandle[COMMAND::WEB_GET_ALLTIME_DATA_REQUEST].c_str());
+        mSerial2->write(mCommandHandle[signal].c_str());
         break;
     }
     case SignalType::WEB_SET_ALLTIME_DATA_REQUEST:
+    case SignalType::WEB_SET_LIGHT1_DATA_REQUEST:
+    case SignalType::WEB_SET_LIGHT2_DATA_REQUEST:
+    case SignalType::WEB_SET_LIGHT3_DATA_REQUEST:
+    case SignalType::WEB_SET_LIGHT4_DATA_REQUEST:
+    case SignalType::WEB_SET_STATUS_LIGHT1_DATA_REQUEST:
+    case SignalType::WEB_SET_STATUS_LIGHT2_DATA_REQUEST:
+    case SignalType::WEB_SET_STATUS_LIGHT3_DATA_REQUEST:
+    case SignalType::WEB_SET_STATUS_LIGHT4_DATA_REQUEST:
+    case SignalType::REMOTE_LIGHT_SEND_TIME_DATE_FROM_NTP:
     {
         int *pack = data->getPackage();
-        String command = mCommandHandle[COMMAND::WEB_SET_ALLTIME_DATA_REQUEST];
-        for(int i = 0; i < data->getSize(); i++)
+        if(pack != nullptr)
         {
-            command += String(" ") + String(pack[i]);
+            String command = mCommandHandle[signal];
+            for(int i = 0; i < data->getSize(); i++)
+            {
+                command += String(" ") + String(pack[i]);
+            }
+            mSerial2->write(command.c_str());
         }
-        mSerial2->write(command.c_str());
         break;
     }
     default:
@@ -100,45 +125,39 @@ void SerialPartner::handleSignal(const SignalType signal, Package *data)
 void SerialPartner::handleMessage(String receiverData)
 {
     String command = receiverData.substring(0, 4);
-    if (command == mCommandHandle[COMMAND::STATUS_WIFI])
-    {
-        mProcessor->handleSignal(SignalType::STATUS_WIFI);
-    }
-    else if (command == mCommandHandle[COMMAND::STATUS_FIREBASE])
-    {
-        mProcessor->handleSignal(SignalType::STATUS_FIREBASE);
-    }
-    else if (command == mCommandHandle[COMMAND::STATUS_NTP])
-    {
-        mProcessor->handleSignal(SignalType::STATUS_NTP);
-    }
-    else if (command == mCommandHandle[COMMAND::WEB_GET_ALLTIME_DATA_RESPONSE])
-    {
-        int size = 0;
-        int *data = parseCommandStringToArray(receiverData, size);
-        Package *package = new Package(data, size);
-        mProcessor->handleSignal(SignalType::WEB_GET_ALLTIME_DATA_RESPONSE, package);
-    }
-    else if (command == mCommandHandle[COMMAND::WEB_SET_ALLTIME_DATA_RESPONSE])
-    {
-        mProcessor->handleSignal(SignalType::WEB_SET_ALLTIME_DATA_RESPONSE);
-    }
-}
 
-int *SerialPartner::parseCommandStringToArray(String str, int &size)
-{
-    char cstr[100];
-    str.toCharArray(cstr, 50);
-
-    char *pch;
-    int *pnum = new int[10];
-    int index = 0;
-    pch = strtok(cstr, " ");
-    while (pch != NULL)
+    if (command == mCommandHandle[SignalType::STATUS_NTP] || command == mCommandHandle[SignalType::STATUS_FIREBASE] ||
+        command == mCommandHandle[SignalType::STATUS_WIFI] || command == mCommandHandle[SignalType::WEB_SET_ALLTIME_DATA_RESPONSE] ||
+        command == mCommandHandle[SignalType::WEB_SET_LIGHT1_DATA_RESPONSE] || command == mCommandHandle[SignalType::WEB_SET_LIGHT2_DATA_RESPONSE] ||
+        command == mCommandHandle[SignalType::WEB_SET_LIGHT3_DATA_RESPONSE] || command == mCommandHandle[SignalType::WEB_SET_LIGHT4_DATA_RESPONSE] ||
+        command == mCommandHandle[SignalType::WEB_SET_STATUS_LIGHT_DATA_RESPONSE] || command == mCommandHandle[SignalType::REMOTE_LIGHT_GET_TIME_DATE_FROM_NTP])
     {
-      pnum[index++] = atoi(pch);
-      pch = strtok(NULL, " ");
+        std::map<SignalType, String>::iterator it;
+        for( it = mCommandHandle.begin(); it != mCommandHandle.end(); it++)
+        {
+            if (it->second == command)
+            {
+                mProcessor->handleSignal(it->first);
+                break;
+            }
+        }
     }
-    size = index;
-    return pnum;
+    else if (command == mCommandHandle[SignalType::WEB_GET_ALLTIME_DATA_RESPONSE] || command == mCommandHandle[SignalType::WEB_GET_LIGHT1_DATA_RESPONSE] ||
+            command == mCommandHandle[SignalType::WEB_GET_LIGHT2_DATA_RESPONSE] || command == mCommandHandle[SignalType::WEB_GET_LIGHT3_DATA_RESPONSE] ||
+            command == mCommandHandle[SignalType::WEB_GET_LIGHT4_DATA_RESPONSE] || command == mCommandHandle[SignalType::WEB_GET_STATUS_DATA_RESPONSE])
+    {
+        std::map<SignalType, String>::iterator it;
+        for( it = mCommandHandle.begin(); it != mCommandHandle.end(); it++)
+        {
+            if (it->second == command)
+            {
+                int size = 0;
+                int *data = parseCommandStringToArray(receiverData, size);
+                Package *package = new Package(data, size);
+                mProcessor->handleSignal(it->first, package);
+                delete package;
+                break;
+            }
+        }
+    }
 }

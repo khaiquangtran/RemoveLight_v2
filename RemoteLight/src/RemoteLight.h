@@ -60,11 +60,13 @@ private:
 	std::shared_ptr<Timer> mTimerDisplaySetupMode;
 	std::shared_ptr<Timer> mTimerCheckConfiguredTimeForLight;
 
-	const uint16_t DELAY_1S  = 1000U;
-	const uint16_t DELAY_3S  = 3000U;
-	const uint16_t DELAY_5S  = 5000U;
-	const uint8_t REPEATS_30  = 30U;
-	const uint8_t REPEATS_10  = 10U;
+	const uint16_t DELAY_1S  	= 1000U;
+	const uint16_t DELAY_3S  	= 3000U;
+	const uint16_t DELAY_5S  	= 5000U;
+	const uint32_t DELAY_1D  	= 86400000U;
+	const uint32_t DELAY_3D  	= 86400000U*3;
+	const uint8_t REPEATS_30  	= 30U;
+	const uint8_t REPEATS_10  	= 10U;
 
 	uint8_t mCounterConnectWifi;
 	uint8_t mCounterDisplayAllTime;
@@ -74,8 +76,8 @@ private:
 	std::mutex mMutex2;
 	std::mutex mMutex3;
 
-	int8_t mFlagConnectFirebase;
 	int8_t mFlagConnectNTP;
+	int8_t mFlagUpdateRTC;
 
 	STATE_CONNECT mStateConnect;
 	CONTROL_MODE mControlMode;

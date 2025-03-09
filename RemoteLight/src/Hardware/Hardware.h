@@ -49,6 +49,7 @@ public:
 
 protected:
   uint8_t scanAddress(uint8_t addressInput);
+  int *parseCommandStringToArray(String str, int &size);
 
   const uint8_t INVALID = 0x80;
 };

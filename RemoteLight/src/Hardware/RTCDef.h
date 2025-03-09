@@ -26,6 +26,7 @@ namespace LIGHT1
 		OFF_HOUR,
 		OFF_MINUTE,
 		OFF_SECOND,
+		END_OF_LIGHT1,
 	};
 }
 
@@ -33,7 +34,7 @@ namespace LIGHT2
 {
 	enum : uint8_t
 	{
-		ON_SWITCH = LIGHT1::OFF_SECOND,
+		ON_SWITCH = LIGHT1::END_OF_LIGHT1,
 		ON_HOUR,
 		ON_MINUTE,
 		ON_SECOND,
@@ -41,6 +42,7 @@ namespace LIGHT2
 		OFF_HOUR,
 		OFF_MINUTE,
 		OFF_SECOND,
+		END_OF_LIGHT2,
 	};
 }
 
@@ -48,7 +50,7 @@ namespace LIGHT3
 {
 	enum : uint8_t
 	{
-		ON_SWITCH = LIGHT2::OFF_SECOND,
+		ON_SWITCH = LIGHT2::END_OF_LIGHT2,
 		ON_HOUR,
 		ON_MINUTE,
 		ON_SECOND,
@@ -56,6 +58,7 @@ namespace LIGHT3
 		OFF_HOUR,
 		OFF_MINUTE,
 		OFF_SECOND,
+		END_OF_LIGHT3,
 	};
 }
 
@@ -63,7 +66,7 @@ namespace LIGHT4
 {
 	enum : uint8_t
 	{
-		ON_SWITCH = LIGHT3::OFF_SECOND,
+		ON_SWITCH = LIGHT3::END_OF_LIGHT3,
 		ON_HOUR,
 		ON_MINUTE,
 		ON_SECOND,
@@ -71,6 +74,7 @@ namespace LIGHT4
 		OFF_HOUR,
 		OFF_MINUTE,
 		OFF_SECOND,
+		END_OF_LIGHT4,
 	};
 }
 

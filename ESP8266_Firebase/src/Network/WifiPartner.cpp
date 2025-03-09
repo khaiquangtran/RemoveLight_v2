@@ -10,6 +10,26 @@ WifiPartner::WifiPartner(Processor *processor) : mProcessor(processor)
 
     mCommandAllTimerFlag = -1;
 
+    mSignalLightMap = {
+        {SignalType::WEB_GET_LIGHT1_DATA_RESPONSE, 1},
+        {SignalType::WEB_GET_LIGHT2_DATA_RESPONSE, 2},
+        {SignalType::WEB_GET_LIGHT3_DATA_RESPONSE, 3},
+        {SignalType::WEB_GET_LIGHT4_DATA_RESPONSE, 4},
+        {SignalType::WEB_SET_ALLTIME_DATA_RESPONSE, 0},
+        {SignalType::WEB_SET_LIGHT1_DATA_RESPONSE, 1},
+        {SignalType::WEB_SET_LIGHT2_DATA_RESPONSE, 2},
+        {SignalType::WEB_SET_LIGHT3_DATA_RESPONSE, 3},
+        {SignalType::WEB_SET_LIGHT4_DATA_RESPONSE, 4},
+        {SignalType::WEB_SET_STATUS_LIGHT_DATA_RESPONSE, 5},
+    };
+
+    mRequestSignalMap = {
+        {REQUEST_FB::SETTING_LIGHT1, std::make_pair(WEB_SET_STATUS_LIGHT1_DATA_REQUEST, 9)},
+        {REQUEST_FB::SETTING_LIGHT2, std::make_pair(WEB_SET_STATUS_LIGHT2_DATA_REQUEST, 10)},
+        {REQUEST_FB::SETTING_LIGHT3, std::make_pair(WEB_SET_STATUS_LIGHT3_DATA_REQUEST, 11)},
+        {REQUEST_FB::SETTING_LIGHT4, std::make_pair(WEB_SET_STATUS_LIGHT4_DATA_REQUEST, 12)},
+    };
+
     mTimeClient = new NTPClient(ntpUDP, "pool.ntp.org");
     mTimeClient->begin();
     mTimeClient->setTimeOffset(GMT);
@@ -36,7 +56,12 @@ void WifiPartner::handleSignal(const SignalType signal, Package *data)
     }
     case SignalType::CHECK_COMMAND_FIREBASE:
     {
-        checkCommandFirebase();
+        checkAlltimeCommandFirebase();
+        checkLightCommandFromFirebase(SignalType::WEB_GET_LIGHT1_DATA_REQUEST, SignalType::WEB_SET_LIGHT1_DATA_REQUEST, 1);
+        checkLightCommandFromFirebase(SignalType::WEB_GET_LIGHT2_DATA_REQUEST, SignalType::WEB_SET_LIGHT2_DATA_REQUEST, 2);
+        checkLightCommandFromFirebase(SignalType::WEB_GET_LIGHT3_DATA_REQUEST, SignalType::WEB_SET_LIGHT3_DATA_REQUEST, 3);
+        checkLightCommandFromFirebase(SignalType::WEB_GET_LIGHT4_DATA_REQUEST, SignalType::WEB_SET_LIGHT4_DATA_REQUEST, 4);
+        checkStatusCommandFromFirebase();
         break;
     }
     case SignalType::WEB_GET_ALLTIME_DATA_RESPONSE:
@@ -44,9 +69,32 @@ void WifiPartner::handleSignal(const SignalType signal, Package *data)
         sendAllTimeDatatoWeb(data);
         break;
     }
-    case SignalType::WEB_SET_ALLTIME_DATA_RESPONSE:
+    case SignalType::WEB_GET_LIGHT1_DATA_RESPONSE:
+    case SignalType::WEB_GET_LIGHT2_DATA_RESPONSE:
+    case SignalType::WEB_GET_LIGHT3_DATA_RESPONSE:
+    case SignalType::WEB_GET_LIGHT4_DATA_RESPONSE:
     {
-        sendResponseSetAllTimeDatatoWeb();
+        sendLightDataToWeb(data, mSignalLightMap[signal]);
+        break;
+    }
+    case SignalType::WEB_SET_ALLTIME_DATA_RESPONSE:
+    case SignalType::WEB_SET_LIGHT1_DATA_RESPONSE:
+    case SignalType::WEB_SET_LIGHT2_DATA_RESPONSE:
+    case SignalType::WEB_SET_LIGHT3_DATA_RESPONSE:
+    case SignalType::WEB_SET_LIGHT4_DATA_RESPONSE:
+    case SignalType::WEB_SET_STATUS_LIGHT_DATA_RESPONSE:
+    {
+        sendResponseSetLightDatatoWeb(mSignalLightMap[signal]);
+        break;
+    }
+    case SignalType::WEB_GET_STATUS_DATA_RESPONSE:
+    {
+        sendLightStatusToWeb(data);
+        break;
+    }
+    case SignalType::REMOTE_LIGHT_GET_TIME_DATE_FROM_NTP:
+    {
+        getTimeDataFromNtp();
         break;
     }
     default:
@@ -56,12 +104,10 @@ void WifiPartner::handleSignal(const SignalType signal, Package *data)
 
 void WifiPartner::connectWifi()
 {
-    if (WiFi.status() != WL_CONNECTED)
-    {
+    if (WiFi.status() != WL_CONNECTED) {
         mProcessor->handleSignal(SignalType::CONNECT_WIFI_FAILED);
     }
-    else
-    {
+    else {
         mProcessor->handleSignal(SignalType::CONNECT_WIFI_SUCCESSFULL);
     }
 }
@@ -69,8 +115,7 @@ void WifiPartner::connectWifi()
 void WifiPartner::signUp()
 {
     // Serial.println("Connecting to Firebase...");
-    if (Firebase.signUp(&mConfig, &mAuth, "", "") == true)
-    {
+    if (Firebase.signUp(&mConfig, &mAuth, "", "") == true) {
         Firebase.begin(&mConfig, &mAuth);
         // Firebase.reconnectWiFi(true);
         if(Firebase.ready()) {
@@ -81,207 +126,79 @@ void WifiPartner::signUp()
             Serial.println("REASON: " + mFbdo.errorReason());
         }
     }
-    else
-    {
+    else {
         mProcessor->handleSignal(SignalType::CONNECT_FIREBASE_FAILED);
     }
 }
 
 void WifiPartner::checkConnectNTP()
 {
-    if (mTimeClient->getEpochTime() > 0)
-    {
+    if (mTimeClient->getEpochTime() > 0) {
         mProcessor->handleSignal(SignalType::CONNECT_NTP_SUCCESSFULL);
     }
-    else
-    {
+    else {
         mProcessor->handleSignal(SignalType::CONNECT_NTP_FAILED);
     }
 }
 
-void WifiPartner::checkCommandFirebase()
+void WifiPartner::checkAlltimeCommandFirebase()
 {
-    if (Firebase.RTDB.getInt(&mFbdo, ALLTIME_COMMAND_PATH))
-    {
-        if (mFbdo.intData() == 1)
-        {
-            Firebase.RTDB.setInt(&mFbdo, ALLTIME_COMMAND_PATH, 3);
+    if (Firebase.RTDB.getInt(&mFbdo, ALLTIME_PATH.at(0))) {
+        if (mFbdo.intData() == static_cast<int>(REQUEST_FB::GETTING)) {
+            Firebase.RTDB.setInt(&mFbdo, ALLTIME_PATH.at(0), static_cast<int>(REQUEST_FB::IDLE));
             mProcessor->handleSignal(SignalType::WEB_GET_ALLTIME_DATA_REQUEST);
         }
-        else if(mFbdo.intData() == 2)
+        else if(mFbdo.intData() == static_cast<int>(REQUEST_FB::SETTING))
         {
-            Firebase.RTDB.setInt(&mFbdo, ALLTIME_COMMAND_PATH, 3);
-            // Format package: second minute hour day date month year
-            //                 xx     xx     xx   xx  xx   xx    xxxx
-            int second  = 0;
-            int minute  = 0;
-            int hour    = 0;
-            int day     = 0;
-            int date    = 0;
-            int month   = 0;
-            int year    = 0;
+            Firebase.RTDB.setInt(&mFbdo, ALLTIME_PATH.at(0), static_cast<int>(REQUEST_FB::IDLE));
+            int size = 7;
+            // Format:        hour minute second day date month year
+            int data[size] = {0U, 0U, 0U, 0U, 0U, 0U, 0U};
 
-            if (Firebase.RTDB.getInt(&mFbdo, ALLTIME_DATA_SECOND_PATH)) {
-                if (mFbdo.dataType() == "int") {
-                    second = mFbdo.intData();
+            for(int i = 1; i < 8; i++)
+            {
+                if (Firebase.RTDB.getInt(&mFbdo, ALLTIME_PATH.at(i))) {
+                    if (mFbdo.dataType() == "int") {
+                        data[i-1] = mFbdo.intData();
+                    }
+                }
+                else {
+                    Serial.println(mFbdo.errorReason());
+                    return;
                 }
             }
-            else {
-                Serial.println(mFbdo.errorReason());
-                return;
-            }
 
-            if (Firebase.RTDB.getInt(&mFbdo, ALLTIME_DATA_MINUTE_PATH)) {
-                if (mFbdo.dataType() == "int") {
-                    minute = mFbdo.intData();
-                }
-            }
-            else {
-                Serial.println(mFbdo.errorReason());
-                return;
-            }
-
-            if (Firebase.RTDB.getInt(&mFbdo, ALLTIME_DATA_HOUR_PATH)) {
-                if (mFbdo.dataType() == "int") {
-                    hour = mFbdo.intData();
-                }
-            }
-            else {
-                Serial.println(mFbdo.errorReason());
-                return;
-            }
-
-            if (Firebase.RTDB.getInt(&mFbdo, ALLTIME_DATA_DAY_PATH)) {
-                if (mFbdo.dataType() == "int") {
-                    day = mFbdo.intData();
-                }
-            }
-            else {
-                Serial.println(mFbdo.errorReason());
-                return;
-            }
-
-            if (Firebase.RTDB.getInt(&mFbdo, ALLTIME_DATA_DATE_PATH)) {
-                if (mFbdo.dataType() == "int") {
-                    date = mFbdo.intData();
-                }
-            }
-            else {
-                Serial.println(mFbdo.errorReason());
-                return;
-            }
-
-            if (Firebase.RTDB.getInt(&mFbdo, ALLTIME_DATA_MONTH_PATH)) {
-                if (mFbdo.dataType() == "int") {
-                    month = mFbdo.intData();
-                }
-            }
-            else {
-                Serial.println(mFbdo.errorReason());
-                return;
-            }
-
-            if (Firebase.RTDB.getInt(&mFbdo, ALLTIME_DATA_YEAR_PATH)) {
-                if (mFbdo.dataType() == "int") {
-                    year = mFbdo.intData();
-                }
-            }
-            else {
-                Serial.println(mFbdo.errorReason());
-                return;
-            }
-            Serial.println(second);
-            Serial.println(minute);
-            Serial.println(hour);
-            Serial.println(day);
-            Serial.println(date);
-            Serial.println(month);
-            Serial.println(year);
-            int data[7] = {second, minute, hour, day, date, month, year};
-            Package *package = new Package(data, 7);
+            Package *package = new Package(data, size);
             mProcessor->handleSignal(SignalType::WEB_SET_ALLTIME_DATA_REQUEST, package);
             delete package;
         }
     }
-
-    else
-    {
+    else {
         Serial.print("error: ");
         Serial.println(mFbdo.errorReason());
+        return;
     }
 }
 
 void WifiPartner::sendAllTimeDatatoWeb(Package *data)
 {
-    int *parseData  = data->getPackage();
-    if(data->getSize() == 8)
-    {
-        int second      = parseData[1];
-        int minute      = parseData[2];
-        int hour        = parseData[3];
-        int day         = parseData[4];
-        int date        = parseData[5];
-        int month       = parseData[6];
-        int year        = parseData[7];
-        if (Firebase.RTDB.setInt(&mFbdo, ALLTIME_DATA_SECOND_PATH, second)) {
-            Serial.println("Sended SECOND DATA");
-        }
-        else {
-            Serial.println("FAILED");
-            Serial.println("REASON: " + mFbdo.errorReason());
-            return;
-        }
-        if(Firebase.RTDB.setInt(&mFbdo, ALLTIME_DATA_MINUTE_PATH, minute)) {
-            Serial.println("Sended MINUTE DATA");
-        }
-        else {
-            Serial.println("FAILED");
-            Serial.println("REASON: " + mFbdo.errorReason());
-            return;
-        }
-        if(Firebase.RTDB.setInt(&mFbdo, ALLTIME_DATA_HOUR_PATH, hour)) {
-            Serial.println("Sended HOUR DATA");
-        }
-        else {
-            Serial.println("FAILED");
-            Serial.println("REASON: " + mFbdo.errorReason());
-            return;
-        }
-        if(Firebase.RTDB.setInt(&mFbdo, ALLTIME_DATA_DAY_PATH, day)) {
-            Serial.println("Sended DAY DATA");
-        }
-        else {
-            Serial.println("FAILED");
-            Serial.println("REASON: " + mFbdo.errorReason());
-            return;
-        }
-        if(Firebase.RTDB.setInt(&mFbdo, ALLTIME_DATA_DATE_PATH, date)) {
-            Serial.println("Sended DATE DATA");
-        }
-        else {
-            Serial.println("FAILED");
-            Serial.println("REASON: " + mFbdo.errorReason());
-            return;
-        }
-        if(Firebase.RTDB.setInt(&mFbdo, ALLTIME_DATA_MONTH_PATH, month)) {
-            Serial.println("Sended MONTH DATA");
-        }
-        else {
-            Serial.println("FAILED");
-            Serial.println("REASON: " + mFbdo.errorReason());
-            return;
-        }
-        if(Firebase.RTDB.setInt(&mFbdo, ALLTIME_DATA_YEAR_PATH, year)) {
-            Serial.println("Sended YEAR DATA");
-        }
-        else {
-            Serial.println("FAILED");
-            Serial.println("REASON: " + mFbdo.errorReason());
-            return;
+    if(data->getSize() == 8U) {
+        int *parseData  = data->getPackage();
+        for(int i = 1; i < 8; i++)
+        {
+            if (Firebase.RTDB.setInt(&mFbdo, ALLTIME_PATH.at(i), parseData[i])) {
+                Serial.println("Sent SECOND DATA");
+            }
+            else {
+                Serial.println("FAILED");
+                Serial.println("REASON: " + mFbdo.errorReason());
+                return;
+            }
         }
 
-        if (Firebase.RTDB.setInt(&mFbdo, ALLTIME_COMMAND_PATH, 0)) {
-            Serial.println("Sended ALLTIME COMMAND DATA");
+        // Inform to Firebase server
+        if (Firebase.RTDB.setInt(&mFbdo, ALLTIME_PATH.at(0), static_cast<int>(REQUEST_FB::SENT_INFORM))) {
+            Serial.println("Sent ALLTIME COMMAND DATA");
         }
         else {
             Serial.println("FAILED");
@@ -294,14 +211,192 @@ void WifiPartner::sendAllTimeDatatoWeb(Package *data)
     }
 }
 
-void WifiPartner::sendResponseSetAllTimeDatatoWeb()
+void WifiPartner::sendLightDataToWeb(Package *data, int lightIndex)
 {
-    if (Firebase.RTDB.setInt(&mFbdo, ALLTIME_COMMAND_PATH, 0)) {
-        Serial.println("Sended ALL TIME DATA response");
+    if(data->getSize() == 9U) {
+        // ---------Format---------
+        // swOn      = parseData[1]
+        // hourOn    = parseData[2]
+        // minuteOn  = parseData[3]
+        // secondOn  = parseData[4]
+        // swOff     = parseData[5]
+        // hourOff   = parseData[6]
+        // minuteOff = parseData[7]
+        // secondOff = parseData[8]
+
+        String path;
+        int *parseData  = data->getPackage();
+
+        for(int i = 1; i < 9; i++)
+        {
+            path = LIGHT_PATHS.at(lightIndex) + DATA_PATHS.at(i);
+            if (Firebase.RTDB.setInt(&mFbdo, path.c_str(), parseData[i])) {
+                Serial.println("Sent DATA");
+            }
+            else {
+                Serial.println("FAILED: " + mFbdo.errorReason());
+                return;
+            }
+        }
+        path = LIGHT_PATHS.at(lightIndex) + DATA_PATHS.at(0);
+        if (Firebase.RTDB.setInt(&mFbdo, path.c_str(), static_cast<int>(REQUEST_FB::SENT_INFORM))) {
+            Serial.println("Sent LIGHT COMMAND DATA");
+        }
+        else {
+            Serial.println("FAILED: " + mFbdo.errorReason());
+            return;
+        }
     }
     else {
-        Serial.println("FAILED");
-        Serial.println("REASON: " + mFbdo.errorReason());
-        return;
+        Serial.println("sendLightDataToWeb(): Length is invalid");
     }
+}
+
+void WifiPartner::sendResponseSetLightDatatoWeb(int lightIndex)
+{
+    String path = LIGHT_PATHS.at(lightIndex) + DATA_PATHS.at(0);
+    if (Firebase.RTDB.setInt(&mFbdo, path.c_str(), 0)) {
+        Serial.println("Sent LIGHT response");
+    }
+    else {
+        Serial.println("FAILED: " + mFbdo.errorReason());
+    }
+}
+
+void WifiPartner::checkLightCommandFromFirebase(SignalType signalGetRequest, SignalType signalSetRequest, int lightIndex)
+{
+    String path = LIGHT_PATHS.at(lightIndex) + DATA_PATHS.at(0);
+    if (Firebase.RTDB.getInt(&mFbdo, path.c_str())) {
+        if (mFbdo.intData() == static_cast<int>(REQUEST_FB::GETTING)) {
+            Firebase.RTDB.setInt(&mFbdo, path.c_str(), static_cast<int>(REQUEST_FB::IDLE));
+            mProcessor->handleSignal(signalGetRequest);
+        }
+        else if(mFbdo.intData() == static_cast<int>(REQUEST_FB::SETTING)) {
+            Firebase.RTDB.setInt(&mFbdo, path.c_str(), static_cast<int>(REQUEST_FB::IDLE));
+
+            // Format: swOn hourOn minuteOn secondOn swOff hourOff minuteOff secondOff
+            int data[8] = {0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U};
+
+            for(int i = 1; i < 9; i++)
+            {
+                path = LIGHT_PATHS.at(lightIndex) + DATA_PATHS.at(i);
+                if (Firebase.RTDB.getInt(&mFbdo, path.c_str())) {
+                    if (mFbdo.dataType() == "int") {
+                        data[i-1] = mFbdo.intData();
+                    }
+                }
+                else {
+                    Serial.println(mFbdo.errorReason());
+                    return;
+                }
+            }
+
+            Package *package = new Package(data, 8);
+            mProcessor->handleSignal(signalSetRequest, package);
+            delete package;
+        }
+    }
+    else {
+        Serial.print("Error: ");
+        Serial.println(mFbdo.errorReason());
+    }
+}
+
+void WifiPartner::checkStatusCommandFromFirebase()
+{
+    String path = LIGHT_PATHS.at(5) + DATA_PATHS.at(0);
+    if (Firebase.RTDB.getInt(&mFbdo, path.c_str())) {
+        REQUEST_FB typeCommand = static_cast<REQUEST_FB>(mFbdo.intData());
+        switch (typeCommand)
+        {
+        case REQUEST_FB::GETTING:
+            Firebase.RTDB.setInt(&mFbdo, path.c_str(), static_cast<int>(REQUEST_FB::IDLE));
+            mProcessor->handleSignal(SignalType::WEB_GET_STATUS_DATA_REQUEST);
+            break;
+        case REQUEST_FB::SETTING_LIGHT1:
+        case REQUEST_FB::SETTING_LIGHT2:
+        case REQUEST_FB::SETTING_LIGHT3:
+        case REQUEST_FB::SETTING_LIGHT4:
+        {
+            Serial.println(mRequestSignalMap[typeCommand].first);
+            Serial.println(mRequestSignalMap[typeCommand].second);
+            Firebase.RTDB.setInt(&mFbdo, path.c_str(), static_cast<int>(REQUEST_FB::IDLE));
+            int data = {0U};
+
+            path = LIGHT_PATHS.at(5) + DATA_PATHS.at(mRequestSignalMap[typeCommand].second);
+            if (Firebase.RTDB.getInt(&mFbdo, path.c_str())) {
+                if (mFbdo.dataType() == "int") {
+                    data = mFbdo.intData();
+                }
+            }
+            else {
+                Serial.println(mFbdo.errorReason());
+                break;
+            }
+            Package *package = new Package(&data, 1);
+            mProcessor->handleSignal(mRequestSignalMap[typeCommand].first, package);
+            delete package;
+            break;
+        }
+        default:
+            break;
+        }
+    }
+    else {
+        Serial.print("Error: ");
+        Serial.println(mFbdo.errorReason());
+    }
+}
+
+void WifiPartner::sendLightStatusToWeb(Package *data)
+{
+    if(data->getSize() == 5U) {
+        String path;
+        int *parseData  = data->getPackage();
+        for(int i = 1; i < 5; i++)
+        {
+            path = LIGHT_PATHS.at(5) + DATA_PATHS.at(i + 8);
+            if (Firebase.RTDB.setInt(&mFbdo, path.c_str(), parseData[i])) {
+                Serial.println("Sent STATUS");
+            }
+            else {
+                Serial.println("FAILED: " + mFbdo.errorReason());
+                return;
+            }
+        }
+        path = LIGHT_PATHS.at(5) + DATA_PATHS.at(0);
+        if (Firebase.RTDB.setInt(&mFbdo, path.c_str(), static_cast<int>(REQUEST_FB::SENT_INFORM))) {
+            Serial.println("Sent STATUS COMMAND DATA");
+        }
+        else {
+            Serial.println("FAILED: " + mFbdo.errorReason());
+        }
+    }
+    else {
+        Serial.println("sendLightStatusToWeb(): Length is invalid");
+    }
+}
+
+void WifiPartner::getTimeDataFromNtp()
+{
+    const int size = 7U;
+    // Format:        hour minute second day date month year
+    int data[size] = {0U, 0U, 0U, 0U, 0U, 0U, 0U};
+
+    mTimeClient->update();
+    time_t epochTime = mTimeClient->getEpochTime();
+    if (epochTime > 0) {
+        struct tm *ptm = gmtime ((time_t *)&epochTime);
+        data[0] = ptm->tm_hour;
+        data[1] = ptm->tm_min;
+        data[2] = ptm->tm_sec;
+        data[3] = ptm->tm_wday + 1;
+        data[4] = ptm->tm_mday;
+        data[5] = ptm->tm_mon + 1; // tm_mon is 0-based
+        data[6] = ptm->tm_year + 1900; // tm_year is years since 1900
+    }
+
+    Package *package = new Package(data, size);
+    mProcessor->handleSignal(SignalType::REMOTE_LIGHT_SEND_TIME_DATE_FROM_NTP, package);
+    delete package;
 }

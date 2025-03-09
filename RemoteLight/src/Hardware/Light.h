@@ -18,6 +18,7 @@ public:
 
 private:
   void controlLight(uint8_t light, uint8_t state = 3);
+  void sendLightStatusToWeb();
 
   RemoteLight *mRML;
   const uint8_t Light1 = 18U;
@@ -25,6 +26,8 @@ private:
   const uint8_t Light3 = 5U;
   const uint8_t Light4 = 4U;
   std::map<uint8_t, bool> mListLight;
+  std::map<SignaLType, uint8_t> mSignalLightMap;
+
 };
 
 #endif // LIGHT_H

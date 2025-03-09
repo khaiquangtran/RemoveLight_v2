@@ -37,47 +37,54 @@ void Processor::handleSignal(const SignalType signal, Package *data)
     switch (signal)
     {
     case SignalType::STATUS_WIFI:
-        mWIFI->handleSignal(SignalType::STATUS_WIFI);
+    case SignalType::STATUS_NTP:
+    case SignalType::STATUS_FIREBASE:
+    case SignalType::REMOTE_LIGHT_GET_TIME_DATE_FROM_NTP:
+    case SignalType::WEB_SET_ALLTIME_DATA_RESPONSE:
+    case SignalType::WEB_SET_STATUS_LIGHT_DATA_RESPONSE:
+        mWIFI->handleSignal(signal);
         break;
     case SignalType::CONNECT_WIFI_FAILED:
-        mSERIAL->handleSignal(SignalType::CONNECT_WIFI_FAILED);
-        break;
     case SignalType::CONNECT_WIFI_SUCCESSFULL:
-        mSERIAL->handleSignal(SignalType::CONNECT_WIFI_SUCCESSFULL);
-        break;
-    case SignalType::STATUS_FIREBASE:
-        mWIFI->handleSignal(SignalType::STATUS_FIREBASE);
+    case SignalType::WEB_GET_ALLTIME_DATA_REQUEST:
+    case SignalType::WEB_GET_LIGHT1_DATA_REQUEST:
+    case SignalType::WEB_GET_LIGHT2_DATA_REQUEST:
+    case SignalType::WEB_GET_LIGHT3_DATA_REQUEST:
+    case SignalType::WEB_GET_LIGHT4_DATA_REQUEST:
+    case SignalType::WEB_GET_STATUS_DATA_REQUEST:
+        mSERIAL->handleSignal(signal);
         break;
     case SignalType::CONNECT_FIREBASE_FAILED:
         mFlagConnectFirebase = -1;
-        mSERIAL->handleSignal(SignalType::CONNECT_FIREBASE_FAILED);
+        mSERIAL->handleSignal(signal);
         break;
     case SignalType::CONNECT_FIREBASE_SUCCESSFULL:
         mFlagConnectFirebase = 1;
-        mSERIAL->handleSignal(SignalType::CONNECT_FIREBASE_SUCCESSFULL);
-        break;
-    case SignalType::STATUS_NTP:
-        mWIFI->handleSignal(SignalType::STATUS_NTP);
+        mSERIAL->handleSignal(signal);
         break;
     case SignalType::CONNECT_NTP_FAILED:
         mFlagConnectNTP = -1;
-        mSERIAL->handleSignal(SignalType::CONNECT_NTP_FAILED);
+        mSERIAL->handleSignal(signal);
         break;
     case SignalType::CONNECT_NTP_SUCCESSFULL:
         mFlagConnectNTP = 1;
-        mSERIAL->handleSignal(SignalType::CONNECT_NTP_SUCCESSFULL);
-        break;
-    case SignalType::WEB_GET_ALLTIME_DATA_REQUEST:
-        mSERIAL->handleSignal(SignalType::WEB_GET_ALLTIME_DATA_REQUEST);
+        mSERIAL->handleSignal(signal);
         break;
     case SignalType::WEB_GET_ALLTIME_DATA_RESPONSE:
-        mWIFI->handleSignal(SignalType::WEB_GET_ALLTIME_DATA_RESPONSE, data);
+    case SignalType::WEB_GET_LIGHT1_DATA_RESPONSE:
+    case SignalType::WEB_GET_LIGHT2_DATA_RESPONSE:
+    case SignalType::WEB_GET_LIGHT3_DATA_RESPONSE:
+    case SignalType::WEB_GET_LIGHT4_DATA_RESPONSE:
+    case SignalType::WEB_GET_STATUS_DATA_RESPONSE:
+        mWIFI->handleSignal(signal, data);
         break;
     case SignalType::WEB_SET_ALLTIME_DATA_REQUEST:
-        mSERIAL->handleSignal(SignalType::WEB_SET_ALLTIME_DATA_REQUEST, data);
-        break;
-    case SignalType::WEB_SET_ALLTIME_DATA_RESPONSE:
-        mWIFI->handleSignal(SignalType::WEB_SET_ALLTIME_DATA_RESPONSE);
+    case SignalType::WEB_SET_STATUS_LIGHT1_DATA_REQUEST:
+    case SignalType::WEB_SET_STATUS_LIGHT2_DATA_REQUEST:
+    case SignalType::WEB_SET_STATUS_LIGHT3_DATA_REQUEST:
+    case SignalType::WEB_SET_STATUS_LIGHT4_DATA_REQUEST:
+    case SignalType::REMOTE_LIGHT_SEND_TIME_DATE_FROM_NTP:
+        mSERIAL->handleSignal(signal, data);
         break;
     default:
         break;

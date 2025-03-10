@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <form id="formconnect">
+        <input type="text" id="api" name="fname" style="height: 20px; width: 440px;">
+        <input type="submit" id="connect" value="connect" style="height: 24px; width: 70px;">
+    </form>
+    <br>
+    <form id="form">
+        <lable>All time</lable>
+        <select id="formSelect" style="height: 25px; width: 60px;">
+            <option value=0></option>
+            <option value=1>SUN</option>
+            <option value=2>MON</option>
+            <option value=3>TUE</option>
+            <option value=4>WED</option>
+            <option value=5>THU</option>
+            <option value=6>FRI</option>
+            <option value=7>SAT</option>
+        </select>
+        <input type="number" placeholder="dd" id="formDate" style="height: 20px; width: 40px;">
+        <input type="number" placeholder="mm" id="formMonth" style="height: 20px; width: 40px;">
+        <input type="number" placeholder="yyyy" id="formYear" style="height: 20px; width: 50px;">
+        <input type="number" placeholder="hh" id="formHour" style="height: 20px; width: 40px;">
+        <input type="number" placeholder="mm" id="formMinute" style="height: 20px; width: 40px;">
+        <input type="number" placeholder="ss" id="formSecond" style="height: 20px; width: 40px;">
+        <input type="submit" id="getInfo" value="get" style="height: 24px; width: 50px;">
+        <input type="submit" id="setInfo" value="set" style="height: 24px; width: 50px;">
+    </form>
+    <br>
+    <form id="form1">
+        <lable>Light1</lable>
+        <select id="swOnLight1" style="height: 25px; width: 60px;">
+            <option value="None"></option>
+            <option value="1">ON</option>
+            <option value="0">OFF</option>
+        </select>
+        <input type="number" placeholder="hh" id="hourOnLight1" name="fname" style="height: 20px; width: 40px;">
+        <input type="number" placeholder="mm" id="minuteOnLight1" name="fname" style="height: 20px; width: 40px;">
+        <input type="number" placeholder="ss" id="secondOnLight1" name="fname" style="height: 20px; width: 40px;">
+        <select id="swOffLight1" style="height: 25px; width: 60px;">
+            <option value="None"></option>
+            <option value="1">ON</option>
+            <option value="0">OFF</option>
+        </select>
+        <input type="number" placeholder="hh" id="hourOffLight1" name="fname" style="height: 20px; width: 40px;">
+        <input type="number" placeholder="mm" id="minuteOffLight1" name="fname" style="height: 20px; width: 40px;">
+        <input type="number" placeholder="ss" id="secondOffLight1" name="fname" style="height: 20px; width: 40px;">
+        <input type="submit" id="getTimeLight1" value="get" style="height: 24px; width: 50px;">
+        <input type="submit" id="setTimeLight1" value="set" style="height: 24px; width: 50px;">
+    </form>
+    <br>
+    <form id="form2">
+        <lable>Light2</lable>
+        <select id="swOnLight2" style="height: 25px; width: 60px;">
+            <option value="None"></option>
+            <option value="1">ON</option>
+            <option value="0">OFF</option>
+        </select>
+        <input type="number" placeholder="hh" id="hourOnLight2" name="fname" style="height: 20px; width: 40px;">
+        <input type="number" placeholder="mm" id="minuteOnLight2" name="fname" style="height: 20px; width: 40px;">
+        <input type="number" placeholder="ss" id="secondOnLight2" name="fname" style="height: 20px; width: 40px;">
+        <select id="swOffLight2" style="height: 25px; width: 60px;">
+            <option value="None"></option>
+            <option value="1">ON</option>
+            <option value="0">OFF</option>
+        </select>
+        <input type="number" placeholder="hh" id="hourOffLight2" name="fname" style="height: 20px; width: 40px;">
+        <input type="number" placeholder="mm" id="minuteOffLight2" name="fname" style="height: 20px; width: 40px;">
+        <input type="number" placeholder="ss" id="secondOffLight2" name="fname" style="height: 20px; width: 40px;">
+        <input type="submit" id="getTimeLight2" value="get" style="height: 24px; width: 50px;">
+        <input type="submit" id="setTimeLight2" value="set" style="height: 24px; width: 50px;">
+    </form>
+    <br>
+    <form id="form3">
+        <lable>Light3</lable>
+        <select id="swOnLight3" style="height: 25px; width: 60px;">
+            <option value="None"></option>
+            <option value="1">ON</option>
+            <option value="0">OFF</option>
+        </select>
+        <input type="number" placeholder="hh" id="hourOnLight3" name="fname" style="height: 20px; width: 40px;">
+        <input type="number" placeholder="mm" id="minuteOnLight3" name="fname" style="height: 20px; width: 40px;">
+        <input type="number" placeholder="ss" id="secondOnLight3" name="fname" style="height: 20px; width: 40px;">
+        <select id="swOffLight3" style="height: 25px; width: 60px;">
+            <option value="None"></option>
+            <option value="1">ON</option>
+            <option value="0">OFF</option>
+        </select>
+        <input type="number" placeholder="hh" id="hourOffLight3" name="fname" style="height: 20px; width: 40px;">
+        <input type="number" placeholder="mm" id="minuteOffLight3" name="fname" style="height: 20px; width: 40px;">
+        <input type="number" placeholder="ss" id="secondOffLight3" name="fname" style="height: 20px; width: 40px;">
+        <input type="submit" id="getTimeLight3" value="get" style="height: 24px; width: 50px;">
+        <input type="submit" id="setTimeLight3" value="set" style="height: 24px; width: 50px;">
+    </form>
+    <br>
+    <form id="form4">
+        <lable>Light4</lable>
+        <select id="swOnLight4" style="height: 25px; width: 60px;">
+            <option value="None"></option>
+            <option value="1">ON</option>
+            <option value="0">OFF</option>
+        </select>
+        <input type="number" placeholder="hh" id="hourOnLight4" name="fname" style="height: 20px; width: 40px;">
+        <input type="number" placeholder="mm" id="minuteOnLight4" name="fname" style="height: 20px; width: 40px;">
+        <input type="number" placeholder="ss" id="secondOnLight4" name="fname" style="height: 20px; width: 40px;">
+        <select id="swOffLight4" style="height: 25px; width: 60px;">
+            <option value="None"></option>
+            <option value="1">ON</option>
+            <option value="0">OFF</option>
+        </select>
+        <input type="number" placeholder="hh" id="hourOffLight4" name="fname" style="height: 20px; width: 40px;">
+        <input type="number" placeholder="mm" id="minuteOffLight4" name="fname" style="height: 20px; width: 40px;">
+        <input type="number" placeholder="ss" id="secondOffLight4" name="fname" style="height: 20px; width: 40px;">
+        <input type="submit" id="getTimeLight4" value="get" style="height: 24px; width: 50px;">
+        <input type="submit" id="setTimeLight4" value="set" style="height: 24px; width: 50px;">
+    </form>
+    <br>
+    <form id="form5">
+        <lable style="height: 24px; width: 60px; display: inline-block;">Light1</lable>
+        <lable style="height: 24px; width: 60px; display: inline-block;">Light2</lable>
+        <lable style="height: 24px; width: 60px; display: inline-block;">Light3</lable>
+        <lable style="height: 24px; width: 60px; display: inline-block;">Light4</lable>
+        <br>
+        <select id="statusLight1" style="height: 24px; width: 60px;">
+            <option value="None"></option>
+            <option value="1">ON</option>
+            <option value="0">OFF</option>
+        </select>
+        <select id="statusLight2" style="height: 24px; width: 60px;">
+            <option value="None"></option>
+            <option value="1">ON</option>
+            <option value="0">OFF</option>
+        </select>
+        <select id="statusLight3" style="height: 24px; width: 60px;">
+            <option value="None"></option>
+            <option value="1">ON</option>
+            <option value="0">OFF</option>
+        </select>
+        <select id="statusLight4" style="height: 24px; width: 60px;">
+            <option value="None"></option>
+            <option value="1">ON</option>
+            <option value="0">OFF</option>
+        </select>
+        <input type="submit" id="getStatus" value="get" style="height: 24px; width: 50px;">
+        <br>
+        <input type="submit" id="setStatusLight1" value="set" style="height: 24px; width: 60px;">
+        <input type="submit" id="setStatusLight2" value="set" style="height: 24px; width: 60px;">
+        <input type="submit" id="setStatusLight3" value="set" style="height: 24px; width: 60px;">
+        <input type="submit" id="setStatusLight4" value="set" style="height: 24px; width: 60px;">
+    </form>
+
+    <script type="module">
+
+        import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js';
+        import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js';
+
+        var firebaseConfig = {
+            apiKey: "",
+            authDomain: "remotelightv2.firebaseapp.com",
+            databaseURL: "https://remotelightv2-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "remotelightv2",
+            storageBucket: "remotelightv2.firebasestorage.app",
+            messagingSenderId: "404523017119",
+            appId: "1:404523017119:web:fb05f911a3edac16ef93aa",
+            measurementId: "G-49DW92V0C3"
+        };
+        var firebaseApp;
+        var db;
+        var isConnect = false;
+
+        const formconnect = document.getElementById('formconnect');
+        formconnect.addEventListener('submit', function (event) {
+            event.preventDefault();
+            let dataAPI = document.getElementById('api').value;
+            firebaseConfig.apiKey = dataAPI;
+            firebaseApp = initializeApp(firebaseConfig);
+            if (getApps().length > 0) {
+                isConnect = true;
+                db = getDatabase(firebaseApp);
+                alert("Firebase connected successfully");
+            }
+            else {
+                alert("Firebase connected failed");
+            }
+            // console.log('apiKey:', dataAPI);
+        });
+
+        var formDate = document.getElementById("formDate");
+        var formMonth = document.getElementById("formMonth");
+        var formYear = document.getElementById("formYear");
+        var formHour = document.getElementById("formHour");
+        var formMinute = document.getElementById("formMinute");
+        var formSecond = document.getElementById("formSecond");
+        var formSelect = document.getElementById("formSelect");
+
+        const form = document.getElementById('form');
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            if (isConnect) {
+                const clickedButton = document.activeElement;
+                if (clickedButton.id === 'getInfo') {
+                    let commandPath = ref(db, 'allTime/command');
+                    set(commandPath, 1);
+                    onValue(commandPath, (snapshot) => {
+                        let value = snapshot.val();
+                        if (value == 0) {
+                            let timeAll = ref(db, 'allTime/data');
+                            onValue(timeAll, (snapshot) => {
+                                let timeData 		= snapshot.val();
+                                formYear.value 		= timeData.year;
+                                formMonth.value 	= timeData.month;
+                                formDate.value 		= timeData.date;
+                                formSelect.value 	= timeData.day;
+                                formHour.value 		= timeData.hour;
+                                formMinute.value 	= timeData.minute;
+                                formSecond.value 	= timeData.second;
+                                console.log(timeData);
+                            });
+                        }
+
+                    });
+                } else if (clickedButton.id === 'setInfo') {
+                    if (!formSelect.value || !formDate.value || !formMonth.value || !formYear.value ||
+                        !formHour.value || !formMinute.value || !formSecond.value) {
+                        alert("Some time field is empty");
+                    }
+                    else {
+                        let commandPath = ref(db, 'allTime/command');
+                        set(commandPath, 2);
+                        let timeAllDataPath = ref(db, 'allTime/data');
+                        set(timeAllDataPath, {
+                            year: 	parseInt(formYear.value),
+                            month: 	parseInt(formMonth.value),
+                            date: 	parseInt(formDate.value),
+                            day: 	parseInt(formSelect.value),
+                            hour: 	parseInt(formHour.value),
+                            minute: parseInt(formMinute.value),
+                            second: parseInt(formSecond.value),
+                        });
+						onValue(commandPath, (snapshot) => {
+                        let value = snapshot.val();
+                        if (value == 0) {
+							alert("Set data successfully");
+							}
+						});
+                        // console.log(year);
+                        // console.log(month);
+                        // console.log(date);
+                        // console.log(hour);
+                        // console.log(minute);
+                    }
+
+                }
+            }
+            else {
+                alert("Firebase haven't connected");
+            }
+        });
+
+        var swOnLight1 		= document.getElementById("swOnLight1");
+        var hourOnLight1 	= document.getElementById("hourOnLight1");
+        var minuteOnLight1 	= document.getElementById("minuteOnLight1");
+        var secondOnLight1 	= document.getElementById("secondOnLight1");
+
+        var swOffLight1 	= document.getElementById("swOffLight1");
+        var hourOffLight1 	= document.getElementById("hourOffLight1");
+        var minuteOffLight1 = document.getElementById("minuteOffLight1");
+        var secondOffLight1 = document.getElementById("secondOffLight1");
+
+        const form1 = document.getElementById('form1');
+        form1.addEventListener('submit', function (event) {
+            event.preventDefault();
+            if (isConnect) {
+                const clickedButton = document.activeElement;
+                if (clickedButton.id === 'getTimeLight1') {
+                    let commandPath = ref(db, 'light1/command');
+                    set(commandPath, 1);
+                    onValue(commandPath, (snapshot) => {
+                        let value = snapshot.val();
+                        if (value == 0) {
+                            let dataPath = ref(db, 'light1/data');
+                            onValue(dataPath, (snapshot) => {
+                                let timeData = snapshot.val();
+                                swOnLight1.value 		= timeData.swOn;
+                                hourOnLight1.value 		= timeData.hourOn;
+                                minuteOnLight1.value 	= timeData.minuteOn;
+                                secondOnLight1.value 	= timeData.secondOn;
+                                swOffLight1.value 		= timeData.swOff;
+                                hourOffLight1.value 	= timeData.hourOff;
+                                minuteOffLight1.value 	= timeData.minuteOff;
+                                secondOffLight1.value 	= timeData.secondOff;
+                                // console.log(timeData);
+                            });
+                        }
+
+                    });
+                }
+                else if (clickedButton.id === 'setTimeLight1') {
+                    if (!swOnLight1.value || !hourOnLight1.value || !minuteOnLight1.value || !secondOnLight1.value ||
+                        !swOffLight1.value || !hourOffLight1.value || !minuteOffLight1.value || !secondOffLight1.value) {
+                        alert("Some time field of Light1 is empty");
+                    }
+                    else {
+                        let commandPath = ref(db, 'light1/command');
+                        set(commandPath, 2);
+                        let dataPath = ref(db, 'light1/data');
+                        set(dataPath, {
+                            swOn: 		parseInt(swOnLight1.value),
+                            hourOn: 	parseInt(hourOnLight1.value),
+                            minuteOn: 	parseInt(minuteOnLight1.value),
+                            secondOn: 	parseInt(secondOnLight1.value),
+                            swOff: 		parseInt(swOffLight1.value),
+                            hourOff: 	parseInt(hourOffLight1.value),
+                            minuteOff: 	parseInt(minuteOffLight1.value),
+                            secondOff: 	parseInt(secondOffLight1.value),
+                        });
+						onValue(commandPath, (snapshot) => {
+                        let value = snapshot.val();
+                        if (value == 0) {
+							alert("Set data successfully");
+							}
+						});
+                    }
+                }
+            }
+            else {
+                alert("Firebase haven't connected");
+            }
+        });
+
+        var swOnLight2 		= document.getElementById("swOnLight2");
+        var hourOnLight2 	= document.getElementById("hourOnLight2");
+        var minuteOnLight2 	= document.getElementById("minuteOnLight2");
+        var secondOnLight2 	= document.getElementById("secondOnLight2");
+
+        var swOffLight2 	= document.getElementById("swOffLight2");
+        var hourOffLight2 	= document.getElementById("hourOffLight2");
+        var minuteOffLight2 = document.getElementById("minuteOffLight2");
+        var secondOffLight2 = document.getElementById("secondOffLight2");
+
+        const form2 = document.getElementById('form2');
+        form2.addEventListener('submit', function (event) {
+            event.preventDefault();
+            if (isConnect) {
+                const clickedButton = document.activeElement;
+                if (clickedButton.id === 'getTimeLight2') {
+                    let commandPath = ref(db, 'light2/command');
+                    set(commandPath, 1);
+                    onValue(commandPath, (snapshot) => {
+                        let value = snapshot.val();
+                        if (value == 0) {
+                            let dataPath = ref(db, 'light2/data');
+                            onValue(dataPath, (snapshot) => {
+                                let timeData = snapshot.val();
+                                swOnLight2.value 		= timeData.swOn;
+                                hourOnLight2.value 		= timeData.hourOn;
+                                minuteOnLight2.value 	= timeData.minuteOn;
+                                secondOnLight2.value 	= timeData.secondOn;
+                                swOffLight2.value 		= timeData.swOff;
+                                hourOffLight2.value 	= timeData.hourOff;
+                                minuteOffLight2.value 	= timeData.minuteOff;
+                                secondOffLight2.value 	= timeData.secondOff;
+                                // console.log(timeData);
+                            });
+                        }
+                    });
+                }
+                else if (clickedButton.id === 'setTimeLight2') {
+                    if (!swOnLight2.value || !hourOnLight2.value || !minuteOnLight2.value || !secondOnLight2.value ||
+                        !swOffLight2.value || !hourOffLight2.value || !minuteOffLight2.value || !secondOffLight2.value) {
+                        alert("Some time field of Light2 is empty");
+                    }
+                    else {
+                        let commandPath = ref(db, 'light2/command');
+                        set(commandPath, 2);
+                        let dataPath = ref(db, 'light2/data');
+                        set(dataPath, {
+                            swOn: 		parseInt(swOnLight2.value),
+                            hourOn: 	parseInt(hourOnLight2.value),
+                            minuteOn: 	parseInt(minuteOnLight2.value),
+                            secondOn: 	parseInt(secondOnLight2.value),
+                            swOff: 		parseInt(swOffLight2.value),
+                            hourOff: 	parseInt(hourOffLight2.value),
+                            minuteOff: 	parseInt(minuteOffLight2.value),
+                            secondOff: 	parseInt(secondOffLight2.value),
+                        });
+						onValue(commandPath, (snapshot) => {
+                        let value = snapshot.val();
+                        if (value == 0) {
+							alert("Set data successfully");
+							}
+						});
+                    }
+                }
+            }
+            else {
+                alert("Firebase haven't connected");
+            }
+        });
+
+        var swOnLight3 		= document.getElementById("swOnLight3");
+        var hourOnLight3 	= document.getElementById("hourOnLight3");
+        var minuteOnLight3 	= document.getElementById("minuteOnLight3");
+        var secondOnLight3 	= document.getElementById("secondOnLight3");
+
+        var swOffLight3 	= document.getElementById("swOffLight3");
+        var hourOffLight3 	= document.getElementById("hourOffLight3");
+        var minuteOffLight3 = document.getElementById("minuteOffLight3");
+        var secondOffLight3 = document.getElementById("secondOffLight3");
+
+        const form3 = document.getElementById('form3');
+        form3.addEventListener('submit', function (event) {
+            event.preventDefault();
+            if (isConnect) {
+                const clickedButton = document.activeElement;
+                if (clickedButton.id === 'getTimeLight3') {
+                    let commandPath = ref(db, 'light3/command');
+                    set(commandPath, 1);
+                    onValue(commandPath, (snapshot) => {
+                        let value = snapshot.val();
+                        if (value == 0) {
+                            let dataPath = ref(db, 'light3/data');
+                            onValue(dataPath, (snapshot) => {
+								alert("Data received");
+                                let timeData 			= snapshot.val();
+                                swOnLight3.value 		= timeData.swOn;
+                                hourOnLight3.value 		= timeData.hourOn;
+                                minuteOnLight3.value 	= timeData.minuteOn;
+                                secondOnLight3.value 	= timeData.secondOn;
+                                swOffLight3.value 		= timeData.swOff;
+                                hourOffLight3.value 	= timeData.hourOff;
+                                minuteOffLight3.value 	= timeData.minuteOff;
+                                secondOffLight3.value 	= timeData.secondOff;
+                                // console.log(timeData);
+                            });
+                        }
+
+                    });
+                }
+                else if (clickedButton.id === 'setTimeLight3') {
+                    if (!swOnLight3.value || !hourOnLight3.value || !minuteOnLight3.value || !secondOnLight3.value ||
+                        !swOffLight3.value || !hourOffLight3.value || !minuteOffLight3.value || !secondOffLight3.value) {
+                        alert("Some time field of Light3 is empty");
+                    }
+                    else {
+                        let commandPath = ref(db, 'light3/command');
+                        set(commandPath, 2);
+                        let dataPath = ref(db, 'light3/data');
+                        set(dataPath, {
+                            swOn: 		parseInt(swOnLight3.value),
+                            hourOn: 	parseInt(hourOnLight3.value),
+                            minuteOn: 	parseInt(minuteOnLight3.value),
+                            secondOn: 	parseInt(secondOnLight3.value),
+                            swOff: 		parseInt(swOffLight3.value),
+                            hourOff: 	parseInt(hourOffLight3.value),
+                            minuteOff: 	parseInt(minuteOffLight3.value),
+                            secondOff: 	parseInt(secondOffLight3.value),
+                        });
+						onValue(commandPath, (snapshot) => {
+                        let value = snapshot.val();
+                        if (value == 0) {
+							alert("Set data successfully");
+							}
+						});
+                    }
+                }
+            }
+            else {
+                alert("Firebase haven't connected");
+            }
+        });
+
+        var swOnLight4 		= document.getElementById("swOnLight4");
+        var hourOnLight4 	= document.getElementById("hourOnLight4");
+        var minuteOnLight4 	= document.getElementById("minuteOnLight4");
+        var secondOnLight4 	= document.getElementById("secondOnLight4");
+
+        var swOffLight4 	= document.getElementById("swOffLight4");
+        var hourOffLight4 	= document.getElementById("hourOffLight4");
+        var minuteOffLight4 = document.getElementById("minuteOffLight4");
+        var secondOffLight4 = document.getElementById("secondOffLight4");
+
+        const form4 = document.getElementById('form4');
+        form4.addEventListener('submit', function (event) {
+            event.preventDefault();
+            if (isConnect) {
+                const clickedButton = document.activeElement;
+                if (clickedButton.id === 'getTimeLight4') {
+                    let commandPath = ref(db, 'light4/command');
+                    set(commandPath, 1);
+                    onValue(commandPath, (snapshot) => {
+                        let value = snapshot.val();
+                        if (value == 0) {
+                            let data = ref(db, 'light4/data');
+                            onValue(data, (snapshot) => {
+                                let timeData 			= snapshot.val();
+                                swOnLight4.value 		= timeData.swOn;
+                                hourOnLight4.value 		= timeData.hourOn;
+                                minuteOnLight4.value 	= timeData.minuteOn;
+                                secondOnLight4.value 	= timeData.secondOn;
+                                swOffLight4.value 		= timeData.swOff;
+                                hourOffLight4.value 	= timeData.hourOff;
+                                minuteOffLight4.value 	= timeData.minuteOff;
+                                secondOffLight4.value 	= timeData.secondOff;
+                                // console.log(timeData);
+                            });
+                        }
+
+                    });
+                }
+                else if (clickedButton.id === 'setTimeLight4') {
+                    if (!swOnLight4.value || !hourOnLight4.value || !minuteOnLight4.value || !secondOnLight4.value ||
+                        !swOffLight4.value || !hourOffLight4.value || !minuteOffLight4.value || !secondOffLight4.value) {
+                        alert("Some time field of Light4 is empty");
+                    }
+                    else {
+                        let commandPath = ref(db, 'light4/command');
+                        set(commandPath, 2);
+                        let dataPath = ref(db, 'light4/data');
+                        set(dataPath, {
+                            swOn: 		parseInt(swOnLight4.value),
+                            hourOn: 	parseInt(hourOnLight4.value),
+                            minuteOn: 	parseInt(minuteOnLight4.value),
+                            secondOn: 	parseInt(secondOnLight4.value),
+                            swOff: 		parseInt(swOffLight4.value),
+                            hourOff: 	parseInt(hourOffLight4.value),
+                            minuteOff: 	parseInt(minuteOffLight4.value),
+                            secondOff: 	parseInt(secondOffLight4.value),
+                        });
+						onValue(commandPath, (snapshot) => {
+                        let value = snapshot.val();
+                        if (value == 0) {
+							alert("Set data successfully");
+							}
+						});
+                    }
+                }
+            }
+            else {
+                alert("Firebase haven't connected");
+            }
+        });
+
+        const statusLight1 = document.getElementById("statusLight1");
+        const statusLight2 = document.getElementById("statusLight2");
+        const statusLight3 = document.getElementById("statusLight3");
+        const statusLight4 = document.getElementById("statusLight4");
+
+        const form5 = document.getElementById('form5');
+        form5.addEventListener('submit', function (event) {
+            event.preventDefault();
+            if (isConnect) {
+                const clickedButton = document.activeElement;
+                if (clickedButton.id === 'getStatus') {
+                    let commandPath = ref(db, 'status/command');
+                    set(commandPath, 1);
+                    onValue(commandPath, (snapshot) => {
+                        let value = snapshot.val();
+                        if (value == 0) {
+                            let dataPath = ref(db, 'status/data');
+                            onValue(dataPath, (snapshot) => {
+								//alert("Get status successfully!!!");
+                                let timeData = snapshot.val();
+                                statusLight1.value = timeData.light1;
+                                statusLight2.value = timeData.light2;
+                                statusLight3.value = timeData.light3;
+                                statusLight4.value = timeData.light4;
+                                // console.log(timeData);
+                            });
+                        }
+                    });
+                }
+                else if (clickedButton.id === 'setStatusLight1') {
+                    let commandPath = ref(db, 'status/command');
+                    set(commandPath, 4);
+                    let dataPath = ref(db, 'status/data/light1');
+                    let value = parseInt(statusLight1.value == "1" ? "1" : "0");
+                    set(dataPath, value);
+                }
+                else if (clickedButton.id === 'setStatusLight2') {
+                    let commandPath = ref(db, 'status/command');
+                    set(commandPath, 5);
+                    let dataPath = ref(db, 'status/data/light2');
+                    let value = parseInt(statusLight2.value == "1" ? "1" : "0");
+                    set(dataPath, value);
+                }
+                else if (clickedButton.id === 'setStatusLight3') {
+                    let commandPath = ref(db, 'status/command');
+                    set(commandPath, 6);
+                    let dataPath = ref(db, 'status/data/light3');
+                    let value = parseInt(statusLight3.value == "1" ? "1" : "0");
+                    set(dataPath, value);
+                }
+                else if (clickedButton.id === 'setStatusLight4') {
+                    let commandPath = ref(db, 'status/command');
+                    set(commandPath, 7);
+                    let dataPath = ref(db, 'status/data/light4');
+                    let value = parseInt(statusLight4.value == "1" ? "1" : "0");
+                    set(dataPath, value);
+                }
+            }
+        });
+
+    </script>
+</body>
+
+</html>

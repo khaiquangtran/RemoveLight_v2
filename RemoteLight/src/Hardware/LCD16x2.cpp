@@ -89,13 +89,13 @@ void LCD16x2::handleSignal(const SignaLType signal, Package *data)
 		case (SignaLType::LCD_DISPLAY_ALL_TIME):
 		{
 			int *value = data->getPackage();
-			mReceiverTime.second = static_cast<uint8_t>(*value++);
-			mReceiverTime.minute = static_cast<uint8_t>(*value++);
-			mReceiverTime.hour = static_cast<uint8_t>(*value++);
-			mReceiverTime.day = static_cast<uint8_t>(*value++);
-			mReceiverTime.date = static_cast<uint8_t>(*value++);
-			mReceiverTime.month = static_cast<uint8_t>(*value++);
-			mReceiverTime.year = static_cast<uint16_t>(*value);
+			mReceiverTime.second 	= static_cast<uint8_t>(*value++);
+			mReceiverTime.minute 	= static_cast<uint8_t>(*value++);
+			mReceiverTime.hour 		= static_cast<uint8_t>(*value++);
+			mReceiverTime.day 		= static_cast<uint8_t>(*value++);
+			mReceiverTime.date 		= static_cast<uint8_t>(*value++);
+			mReceiverTime.month 	= static_cast<uint8_t>(*value++);
+			mReceiverTime.year 		= static_cast<uint16_t>(*value);
 			displayTimeFromDS1307(mReceiverTime);
 			break;
 		}

@@ -15,19 +15,23 @@ WifiPartner::WifiPartner(Processor *processor) : mProcessor(processor)
         {SignalType::WEB_GET_LIGHT2_DATA_RESPONSE, 2},
         {SignalType::WEB_GET_LIGHT3_DATA_RESPONSE, 3},
         {SignalType::WEB_GET_LIGHT4_DATA_RESPONSE, 4},
-        {SignalType::WEB_SET_ALLTIME_DATA_RESPONSE, 0},
-        {SignalType::WEB_SET_LIGHT1_DATA_RESPONSE, 1},
-        {SignalType::WEB_SET_LIGHT2_DATA_RESPONSE, 2},
-        {SignalType::WEB_SET_LIGHT3_DATA_RESPONSE, 3},
-        {SignalType::WEB_SET_LIGHT4_DATA_RESPONSE, 4},
-        {SignalType::WEB_SET_STATUS_LIGHT_DATA_RESPONSE, 5},
     };
 
     mRequestSignalMap = {
-        {REQUEST_FB::SETTING_LIGHT1, std::make_pair(WEB_SET_STATUS_LIGHT1_DATA_REQUEST, 9)},
-        {REQUEST_FB::SETTING_LIGHT2, std::make_pair(WEB_SET_STATUS_LIGHT2_DATA_REQUEST, 10)},
-        {REQUEST_FB::SETTING_LIGHT3, std::make_pair(WEB_SET_STATUS_LIGHT3_DATA_REQUEST, 11)},
-        {REQUEST_FB::SETTING_LIGHT4, std::make_pair(WEB_SET_STATUS_LIGHT4_DATA_REQUEST, 12)},
+        {REQUEST_FB::GETTING_LIGHT1_DATA, std::make_pair(SignalType::WEB_GET_LIGHT1_DATA_REQUEST, 1)},
+        {REQUEST_FB::GETTING_LIGHT2_DATA, std::make_pair(SignalType::WEB_GET_LIGHT2_DATA_REQUEST, 1)},
+        {REQUEST_FB::GETTING_LIGHT3_DATA, std::make_pair(SignalType::WEB_GET_LIGHT3_DATA_REQUEST, 1)},
+        {REQUEST_FB::GETTING_LIGHT4_DATA, std::make_pair(SignalType::WEB_GET_LIGHT4_DATA_REQUEST, 1)},
+
+        {REQUEST_FB::SETTING_LIGHT1_DATA, std::make_pair(SignalType::WEB_SET_LIGHT1_DATA_REQUEST, 1)},
+        {REQUEST_FB::SETTING_LIGHT2_DATA, std::make_pair(SignalType::WEB_SET_LIGHT2_DATA_REQUEST, 2)},
+        {REQUEST_FB::SETTING_LIGHT3_DATA, std::make_pair(SignalType::WEB_SET_LIGHT3_DATA_REQUEST, 3)},
+        {REQUEST_FB::SETTING_LIGHT4_DATA, std::make_pair(SignalType::WEB_SET_LIGHT4_DATA_REQUEST, 4)},
+
+        {REQUEST_FB::SETTING_LIGHT1_STATUS, std::make_pair(SignalType::WEB_SET_STATUS_LIGHT1_DATA_REQUEST, 9)},
+        {REQUEST_FB::SETTING_LIGHT2_STATUS, std::make_pair(SignalType::WEB_SET_STATUS_LIGHT2_DATA_REQUEST, 10)},
+        {REQUEST_FB::SETTING_LIGHT3_STATUS, std::make_pair(SignalType::WEB_SET_STATUS_LIGHT3_DATA_REQUEST, 11)},
+        {REQUEST_FB::SETTING_LIGHT4_STATUS, std::make_pair(SignalType::WEB_SET_STATUS_LIGHT4_DATA_REQUEST, 12)},
     };
 
     mTimeClient = new NTPClient(ntpUDP, "pool.ntp.org");
@@ -56,12 +60,7 @@ void WifiPartner::handleSignal(const SignalType signal, Package *data)
     }
     case SignalType::CHECK_COMMAND_FIREBASE:
     {
-        checkAlltimeCommandFirebase();
-        checkLightCommandFromFirebase(SignalType::WEB_GET_LIGHT1_DATA_REQUEST, SignalType::WEB_SET_LIGHT1_DATA_REQUEST, 1);
-        checkLightCommandFromFirebase(SignalType::WEB_GET_LIGHT2_DATA_REQUEST, SignalType::WEB_SET_LIGHT2_DATA_REQUEST, 2);
-        checkLightCommandFromFirebase(SignalType::WEB_GET_LIGHT3_DATA_REQUEST, SignalType::WEB_SET_LIGHT3_DATA_REQUEST, 3);
-        checkLightCommandFromFirebase(SignalType::WEB_GET_LIGHT4_DATA_REQUEST, SignalType::WEB_SET_LIGHT4_DATA_REQUEST, 4);
-        checkStatusCommandFromFirebase();
+        checkCommandFirebase();
         break;
     }
     case SignalType::WEB_GET_ALLTIME_DATA_RESPONSE:
@@ -84,7 +83,7 @@ void WifiPartner::handleSignal(const SignalType signal, Package *data)
     case SignalType::WEB_SET_LIGHT4_DATA_RESPONSE:
     case SignalType::WEB_SET_STATUS_LIGHT_DATA_RESPONSE:
     {
-        sendResponseSetLightDatatoWeb(mSignalLightMap[signal]);
+        sendResponseSetLightDatatoWeb();
         break;
     }
     case SignalType::WEB_GET_STATUS_DATA_RESPONSE:
@@ -141,22 +140,25 @@ void WifiPartner::checkConnectNTP()
     }
 }
 
-void WifiPartner::checkAlltimeCommandFirebase()
+void WifiPartner::checkCommandFirebase()
 {
-    if (Firebase.RTDB.getInt(&mFbdo, ALLTIME_PATH.at(0))) {
-        if (mFbdo.intData() == static_cast<int>(REQUEST_FB::GETTING)) {
-            Firebase.RTDB.setInt(&mFbdo, ALLTIME_PATH.at(0), static_cast<int>(REQUEST_FB::IDLE));
-            mProcessor->handleSignal(SignalType::WEB_GET_ALLTIME_DATA_REQUEST);
-        }
-        else if(mFbdo.intData() == static_cast<int>(REQUEST_FB::SETTING))
+    if (Firebase.RTDB.getInt(&mFbdo, DATA_PATHS.at(0))) {
+        REQUEST_FB typeCommand = static_cast<REQUEST_FB>(mFbdo.intData());
+        switch (typeCommand)
         {
-            Firebase.RTDB.setInt(&mFbdo, ALLTIME_PATH.at(0), static_cast<int>(REQUEST_FB::IDLE));
+        case REQUEST_FB::GETTING_ALLTIME_DATA:
+        {
+            Firebase.RTDB.setInt(&mFbdo, DATA_PATHS.at(0), static_cast<int>(REQUEST_FB::IDLE));
+            mProcessor->handleSignal(SignalType::WEB_GET_ALLTIME_DATA_REQUEST);
+            break;
+        }
+        case REQUEST_FB::SETTING_ALLTIME_DATA:
+        {
+            Firebase.RTDB.setInt(&mFbdo, DATA_PATHS.at(0), static_cast<int>(REQUEST_FB::IDLE));
             int size = 7;
             // Format:        hour minute second day date month year
             int data[size] = {0U, 0U, 0U, 0U, 0U, 0U, 0U};
-
-            for(int i = 1; i < 8; i++)
-            {
+            for(int i = 1; i < 8; i++) {
                 if (Firebase.RTDB.getInt(&mFbdo, ALLTIME_PATH.at(i))) {
                     if (mFbdo.dataType() == "int") {
                         data[i-1] = mFbdo.intData();
@@ -167,10 +169,78 @@ void WifiPartner::checkAlltimeCommandFirebase()
                     return;
                 }
             }
-
             Package *package = new Package(data, size);
             mProcessor->handleSignal(SignalType::WEB_SET_ALLTIME_DATA_REQUEST, package);
             delete package;
+            break;
+        }
+        case REQUEST_FB::GETTING_LIGHT1_DATA:
+        case REQUEST_FB::GETTING_LIGHT2_DATA:
+        case REQUEST_FB::GETTING_LIGHT3_DATA:
+        case REQUEST_FB::GETTING_LIGHT4_DATA:
+        {
+            Firebase.RTDB.setInt(&mFbdo, DATA_PATHS.at(0), static_cast<int>(REQUEST_FB::IDLE));
+            mProcessor->handleSignal(mRequestSignalMap[typeCommand].first);
+            break;
+        }
+        case REQUEST_FB::SETTING_LIGHT1_DATA:
+        case REQUEST_FB::SETTING_LIGHT2_DATA:
+        case REQUEST_FB::SETTING_LIGHT3_DATA:
+        case REQUEST_FB::SETTING_LIGHT4_DATA:
+        {
+            Firebase.RTDB.setInt(&mFbdo, DATA_PATHS.at(0), static_cast<int>(REQUEST_FB::IDLE));
+            // Format: swOn hourOn minuteOn secondOn swOff hourOff minuteOff secondOff
+            int data[8] = {0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U};
+            String path;
+            for(int i = 1; i < 9; i++)
+            {
+                path = LIGHT_PATHS.at(mRequestSignalMap[typeCommand].second) + DATA_PATHS.at(i);
+                if (Firebase.RTDB.getInt(&mFbdo, path.c_str())) {
+                    if (mFbdo.dataType() == "int") {
+                        data[i-1] = mFbdo.intData();
+                    }
+                }
+                else {
+                    Serial.println(mFbdo.errorReason());
+                    return;
+                }
+            }
+
+            Package *package = new Package(data, 8);
+            mProcessor->handleSignal(mRequestSignalMap[typeCommand].first, package);
+            delete package;
+            break;
+        }
+        case REQUEST_FB::GETTING_ALL_STATUS:
+        {
+            Firebase.RTDB.setInt(&mFbdo, DATA_PATHS.at(0), static_cast<int>(REQUEST_FB::IDLE));
+            mProcessor->handleSignal(SignalType::WEB_GET_STATUS_DATA_REQUEST);
+            break;
+        }
+        case REQUEST_FB::SETTING_LIGHT1_STATUS:
+        case REQUEST_FB::SETTING_LIGHT2_STATUS:
+        case REQUEST_FB::SETTING_LIGHT3_STATUS:
+        case REQUEST_FB::SETTING_LIGHT4_STATUS:
+        {
+            Firebase.RTDB.setInt(&mFbdo, DATA_PATHS.at(0), static_cast<int>(REQUEST_FB::IDLE));
+            int data = {0U};
+
+            String path = LIGHT_PATHS.at(5) + DATA_PATHS.at(mRequestSignalMap[typeCommand].second);
+            if (Firebase.RTDB.getInt(&mFbdo, path.c_str())) {
+                if (mFbdo.dataType() == "int") {
+                    data = mFbdo.intData();
+                }
+            }
+            else {
+                Serial.println(mFbdo.errorReason());
+            }
+            Package *package = new Package(&data, 1);
+            mProcessor->handleSignal(mRequestSignalMap[typeCommand].first, package);
+            delete package;
+            break;
+        }
+        default:
+            break;
         }
     }
     else {
@@ -197,7 +267,7 @@ void WifiPartner::sendAllTimeDatatoWeb(Package *data)
         }
 
         // Inform to Firebase server
-        if (Firebase.RTDB.setInt(&mFbdo, ALLTIME_PATH.at(0), static_cast<int>(REQUEST_FB::SENT_INFORM))) {
+        if (Firebase.RTDB.setInt(&mFbdo, DATA_PATHS.at(0), static_cast<int>(REQUEST_FB::SENT_INFORM))) {
             Serial.println("Sent ALLTIME COMMAND DATA");
         }
         else {
@@ -238,8 +308,8 @@ void WifiPartner::sendLightDataToWeb(Package *data, int lightIndex)
                 return;
             }
         }
-        path = LIGHT_PATHS.at(lightIndex) + DATA_PATHS.at(0);
-        if (Firebase.RTDB.setInt(&mFbdo, path.c_str(), static_cast<int>(REQUEST_FB::SENT_INFORM))) {
+
+        if (Firebase.RTDB.setInt(&mFbdo, DATA_PATHS.at(0), static_cast<int>(REQUEST_FB::SENT_INFORM))) {
             Serial.println("Sent LIGHT COMMAND DATA");
         }
         else {
@@ -252,99 +322,13 @@ void WifiPartner::sendLightDataToWeb(Package *data, int lightIndex)
     }
 }
 
-void WifiPartner::sendResponseSetLightDatatoWeb(int lightIndex)
+void WifiPartner::sendResponseSetLightDatatoWeb()
 {
-    String path = LIGHT_PATHS.at(lightIndex) + DATA_PATHS.at(0);
-    if (Firebase.RTDB.setInt(&mFbdo, path.c_str(), 0)) {
+    if (Firebase.RTDB.setInt(&mFbdo, DATA_PATHS.at(0), static_cast<int>(REQUEST_FB::SENT_INFORM))) {
         Serial.println("Sent LIGHT response");
     }
     else {
         Serial.println("FAILED: " + mFbdo.errorReason());
-    }
-}
-
-void WifiPartner::checkLightCommandFromFirebase(SignalType signalGetRequest, SignalType signalSetRequest, int lightIndex)
-{
-    String path = LIGHT_PATHS.at(lightIndex) + DATA_PATHS.at(0);
-    if (Firebase.RTDB.getInt(&mFbdo, path.c_str())) {
-        if (mFbdo.intData() == static_cast<int>(REQUEST_FB::GETTING)) {
-            Firebase.RTDB.setInt(&mFbdo, path.c_str(), static_cast<int>(REQUEST_FB::IDLE));
-            mProcessor->handleSignal(signalGetRequest);
-        }
-        else if(mFbdo.intData() == static_cast<int>(REQUEST_FB::SETTING)) {
-            Firebase.RTDB.setInt(&mFbdo, path.c_str(), static_cast<int>(REQUEST_FB::IDLE));
-
-            // Format: swOn hourOn minuteOn secondOn swOff hourOff minuteOff secondOff
-            int data[8] = {0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U};
-
-            for(int i = 1; i < 9; i++)
-            {
-                path = LIGHT_PATHS.at(lightIndex) + DATA_PATHS.at(i);
-                if (Firebase.RTDB.getInt(&mFbdo, path.c_str())) {
-                    if (mFbdo.dataType() == "int") {
-                        data[i-1] = mFbdo.intData();
-                    }
-                }
-                else {
-                    Serial.println(mFbdo.errorReason());
-                    return;
-                }
-            }
-
-            Package *package = new Package(data, 8);
-            mProcessor->handleSignal(signalSetRequest, package);
-            delete package;
-        }
-    }
-    else {
-        Serial.print("Error: ");
-        Serial.println(mFbdo.errorReason());
-    }
-}
-
-void WifiPartner::checkStatusCommandFromFirebase()
-{
-    String path = LIGHT_PATHS.at(5) + DATA_PATHS.at(0);
-    if (Firebase.RTDB.getInt(&mFbdo, path.c_str())) {
-        REQUEST_FB typeCommand = static_cast<REQUEST_FB>(mFbdo.intData());
-        switch (typeCommand)
-        {
-        case REQUEST_FB::GETTING:
-            Firebase.RTDB.setInt(&mFbdo, path.c_str(), static_cast<int>(REQUEST_FB::IDLE));
-            mProcessor->handleSignal(SignalType::WEB_GET_STATUS_DATA_REQUEST);
-            break;
-        case REQUEST_FB::SETTING_LIGHT1:
-        case REQUEST_FB::SETTING_LIGHT2:
-        case REQUEST_FB::SETTING_LIGHT3:
-        case REQUEST_FB::SETTING_LIGHT4:
-        {
-            Serial.println(mRequestSignalMap[typeCommand].first);
-            Serial.println(mRequestSignalMap[typeCommand].second);
-            Firebase.RTDB.setInt(&mFbdo, path.c_str(), static_cast<int>(REQUEST_FB::IDLE));
-            int data = {0U};
-
-            path = LIGHT_PATHS.at(5) + DATA_PATHS.at(mRequestSignalMap[typeCommand].second);
-            if (Firebase.RTDB.getInt(&mFbdo, path.c_str())) {
-                if (mFbdo.dataType() == "int") {
-                    data = mFbdo.intData();
-                }
-            }
-            else {
-                Serial.println(mFbdo.errorReason());
-                break;
-            }
-            Package *package = new Package(&data, 1);
-            mProcessor->handleSignal(mRequestSignalMap[typeCommand].first, package);
-            delete package;
-            break;
-        }
-        default:
-            break;
-        }
-    }
-    else {
-        Serial.print("Error: ");
-        Serial.println(mFbdo.errorReason());
     }
 }
 
@@ -364,8 +348,8 @@ void WifiPartner::sendLightStatusToWeb(Package *data)
                 return;
             }
         }
-        path = LIGHT_PATHS.at(5) + DATA_PATHS.at(0);
-        if (Firebase.RTDB.setInt(&mFbdo, path.c_str(), static_cast<int>(REQUEST_FB::SENT_INFORM))) {
+
+        if (Firebase.RTDB.setInt(&mFbdo, DATA_PATHS.at(0), static_cast<int>(REQUEST_FB::SENT_INFORM))) {
             Serial.println("Sent STATUS COMMAND DATA");
         }
         else {

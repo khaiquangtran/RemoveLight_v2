@@ -160,7 +160,7 @@
     <script type="module">
 
         import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js';
-        import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js';
+        import { getDatabase, ref, set, get, onValue, off } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js';
 
         var firebaseConfig = {
             apiKey: "",
@@ -176,6 +176,26 @@
         var db;
         var isConnect = false;
 
+        const REQUEST_FB = {
+            SENT_INFORM: 0,
+            IDLE: 1,
+            GETTING_ALLTIME_DATA: 2,
+            SETTING_ALLTIME_DATA: 3,
+            GETTING_LIGHT1_DATA: 4,
+            SETTING_LIGHT1_DATA: 5,
+            GETTING_LIGHT2_DATA: 6,
+            SETTING_LIGHT2_DATA: 7,
+            GETTING_LIGHT3_DATA: 8,
+            SETTING_LIGHT3_DATA: 9,
+            GETTING_LIGHT4_DATA: 10,
+            SETTING_LIGHT4_DATA: 11,
+            GETTING_ALL_STATUS: 12,
+            SETTING_LIGHT1_STATUS: 13,
+            SETTING_LIGHT2_STATUS: 14,
+            SETTING_LIGHT3_STATUS: 15,
+            SETTING_LIGHT4_STATUS: 16
+        };
+        var commandPath;
         const formconnect = document.getElementById('formconnect');
         formconnect.addEventListener('submit', function (event) {
             event.preventDefault();
@@ -185,6 +205,7 @@
             if (getApps().length > 0) {
                 isConnect = true;
                 db = getDatabase(firebaseApp);
+                commandPath = ref(db, 'command');
                 alert("Firebase connected successfully");
             }
             else {
@@ -201,31 +222,44 @@
         var formSecond = document.getElementById("formSecond");
         var formSelect = document.getElementById("formSelect");
 
+        // AIzaSyBDm5KKsQ3fzAkkPf44MgEW1O5yLDZiT1U
         const form = document.getElementById('form');
         form.addEventListener('submit', function (event) {
             event.preventDefault();
             if (isConnect) {
                 const clickedButton = document.activeElement;
                 if (clickedButton.id === 'getInfo') {
-                    let commandPath = ref(db, 'allTime/command');
-                    set(commandPath, 1);
+                    set(commandPath, REQUEST_FB.GETTING_ALLTIME_DATA).then(() => {
+                        console.log("Command GETTING_ALLTIME_DATA sent, waiting for update...");
+                    }).catch((error) => {
+                        console.error("Error setting commandPath:", error);
+                    });
+
+                    // Listen for changes at commandPath
                     onValue(commandPath, (snapshot) => {
                         let value = snapshot.val();
-                        if (value == 0) {
+                        console.log("commandPath value:", value);
+                        if (value == REQUEST_FB.SENT_INFORM) {
+                            // When Firebase confirms it's done processing (value == 0), fetch the new data
                             let timeAll = ref(db, 'allTime/data');
-                            onValue(timeAll, (snapshot) => {
-                                let timeData 		= snapshot.val();
-                                formYear.value 		= timeData.year;
-                                formMonth.value 	= timeData.month;
-                                formDate.value 		= timeData.date;
-                                formSelect.value 	= timeData.day;
-                                formHour.value 		= timeData.hour;
-                                formMinute.value 	= timeData.minute;
-                                formSecond.value 	= timeData.second;
-                                console.log(timeData);
+                            get(timeAll).then((snapshot) => {
+                                let timeData = snapshot.val();
+                                if (timeData) {
+                                    formYear.value = timeData.year;
+                                    formMonth.value = timeData.month;
+                                    formDate.value = timeData.date;
+                                    formSelect.value = timeData.day;
+                                    formHour.value = timeData.hour;
+                                    formMinute.value = timeData.minute;
+                                    formSecond.value = timeData.second;
+                                }
+                                alert("Updated time data");
+                                // Destroy listener after getting data
+                                off(commandPath);
+                            }).catch((error) => {
+                                console.error("Error fetching time data:", error);
                             });
                         }
-
                     });
                 } else if (clickedButton.id === 'setInfo') {
                     if (!formSelect.value || !formDate.value || !formMonth.value || !formYear.value ||
@@ -233,31 +267,37 @@
                         alert("Some time field is empty");
                     }
                     else {
-                        let commandPath = ref(db, 'allTime/command');
-                        set(commandPath, 2);
                         let timeAllDataPath = ref(db, 'allTime/data');
                         set(timeAllDataPath, {
-                            year: 	parseInt(formYear.value),
-                            month: 	parseInt(formMonth.value),
-                            date: 	parseInt(formDate.value),
-                            day: 	parseInt(formSelect.value),
-                            hour: 	parseInt(formHour.value),
+                            year: parseInt(formYear.value),
+                            month: parseInt(formMonth.value),
+                            date: parseInt(formDate.value),
+                            day: parseInt(formSelect.value),
+                            hour: parseInt(formHour.value),
                             minute: parseInt(formMinute.value),
                             second: parseInt(formSecond.value),
+                        }).then(() => {
+                            console.log("Data set successfully");
+                        }).catch((error) => {
+                            console.error("Error setting data: ", error);
                         });
-						onValue(commandPath, (snapshot) => {
-                        let value = snapshot.val();
-                        if (value == 0) {
-							alert("Set data successfully");
-							}
-						});
-                        // console.log(year);
-                        // console.log(month);
-                        // console.log(date);
-                        // console.log(hour);
-                        // console.log(minute);
-                    }
 
+                        set(commandPath, REQUEST_FB.SETTING_ALLTIME_DATA).then(() => {
+                            console.log("Command SETTING_ALLTIME_DATA sent, waiting for update...");
+                        }).catch((error) => {
+                            console.error("Error setting commandPath:", error);
+                        });
+
+                        onValue(commandPath, (snapshot) => {
+                            let value = snapshot.val();
+                            console.log("commandPath value:", value);
+                            if (value == REQUEST_FB.SENT_INFORM) {
+                                alert("Updated time data");
+                                // Destroy listener after getting data
+                                off(commandPath);
+                            }
+                        })
+                    }
                 }
             }
             else {
@@ -265,13 +305,13 @@
             }
         });
 
-        var swOnLight1 		= document.getElementById("swOnLight1");
-        var hourOnLight1 	= document.getElementById("hourOnLight1");
-        var minuteOnLight1 	= document.getElementById("minuteOnLight1");
-        var secondOnLight1 	= document.getElementById("secondOnLight1");
+        var swOnLight1 = document.getElementById("swOnLight1");
+        var hourOnLight1 = document.getElementById("hourOnLight1");
+        var minuteOnLight1 = document.getElementById("minuteOnLight1");
+        var secondOnLight1 = document.getElementById("secondOnLight1");
 
-        var swOffLight1 	= document.getElementById("swOffLight1");
-        var hourOffLight1 	= document.getElementById("hourOffLight1");
+        var swOffLight1 = document.getElementById("swOffLight1");
+        var hourOffLight1 = document.getElementById("hourOffLight1");
         var minuteOffLight1 = document.getElementById("minuteOffLight1");
         var secondOffLight1 = document.getElementById("secondOffLight1");
 
@@ -281,26 +321,34 @@
             if (isConnect) {
                 const clickedButton = document.activeElement;
                 if (clickedButton.id === 'getTimeLight1') {
-                    let commandPath = ref(db, 'light1/command');
-                    set(commandPath, 1);
+                    set(commandPath, REQUEST_FB.GETTING_LIGHT1_DATA).then(() => {
+                        console.log("Command GETTING_LIGHT1_DATA sent, waiting for update...");
+                    }).catch((error) => {
+                        console.error("Error setting commandPath:", error);
+                    });
                     onValue(commandPath, (snapshot) => {
                         let value = snapshot.val();
-                        if (value == 0) {
+                        console.log("commandPath value:", value);
+                        if (value == REQUEST_FB.SENT_INFORM) {
                             let dataPath = ref(db, 'light1/data');
-                            onValue(dataPath, (snapshot) => {
+                            get(dataPath).then((snapshot) => {
                                 let timeData = snapshot.val();
-                                swOnLight1.value 		= timeData.swOn;
-                                hourOnLight1.value 		= timeData.hourOn;
-                                minuteOnLight1.value 	= timeData.minuteOn;
-                                secondOnLight1.value 	= timeData.secondOn;
-                                swOffLight1.value 		= timeData.swOff;
-                                hourOffLight1.value 	= timeData.hourOff;
-                                minuteOffLight1.value 	= timeData.minuteOff;
-                                secondOffLight1.value 	= timeData.secondOff;
-                                // console.log(timeData);
+                                if (timeData) {
+                                    swOnLight1.value = timeData.swOn;
+                                    hourOnLight1.value = timeData.hourOn;
+                                    minuteOnLight1.value = timeData.minuteOn;
+                                    secondOnLight1.value = timeData.secondOn;
+                                    swOffLight1.value = timeData.swOff;
+                                    hourOffLight1.value = timeData.hourOff;
+                                    minuteOffLight1.value = timeData.minuteOff;
+                                    secondOffLight1.value = timeData.secondOff;
+                                }
+                                alert("Updated time data");
+                                off(commandPath);
+                            }).catch((error) => {
+                                console.error("Error fetching time data:", error);
                             });
                         }
-
                     });
                 }
                 else if (clickedButton.id === 'setTimeLight1') {
@@ -309,25 +357,36 @@
                         alert("Some time field of Light1 is empty");
                     }
                     else {
-                        let commandPath = ref(db, 'light1/command');
-                        set(commandPath, 2);
                         let dataPath = ref(db, 'light1/data');
                         set(dataPath, {
-                            swOn: 		parseInt(swOnLight1.value),
-                            hourOn: 	parseInt(hourOnLight1.value),
-                            minuteOn: 	parseInt(minuteOnLight1.value),
-                            secondOn: 	parseInt(secondOnLight1.value),
-                            swOff: 		parseInt(swOffLight1.value),
-                            hourOff: 	parseInt(hourOffLight1.value),
-                            minuteOff: 	parseInt(minuteOffLight1.value),
-                            secondOff: 	parseInt(secondOffLight1.value),
+                            swOn: parseInt(swOnLight1.value),
+                            hourOn: parseInt(hourOnLight1.value),
+                            minuteOn: parseInt(minuteOnLight1.value),
+                            secondOn: parseInt(secondOnLight1.value),
+                            swOff: parseInt(swOffLight1.value),
+                            hourOff: parseInt(hourOffLight1.value),
+                            minuteOff: parseInt(minuteOffLight1.value),
+                            secondOff: parseInt(secondOffLight1.value),
+                        }).then(() => {
+                            console.log("Data set successfully");
+                        }).catch((error) => {
+                            console.error("Error setting data: ", error);
                         });
-						onValue(commandPath, (snapshot) => {
-                        let value = snapshot.val();
-                        if (value == 0) {
-							alert("Set data successfully");
-							}
-						});
+
+                        set(commandPath, REQUEST_FB.SETTING_LIGHT1_DATA).then(() => {
+                            console.log("Command SETTING_LIGHT1_DATA sent, waiting for update...");
+                        }).catch((error) => {
+                            console.error("Error setting commandPath:", error);
+                        });
+
+                        onValue(commandPath, (snapshot) => {
+                            let value = snapshot.val();
+                            console.log("commandPath value:", value);
+                            if (value == REQUEST_FB.SENT_INFORM) {
+                                off(commandPath);
+								alert("Set Light1 data successfully");
+                            }
+                        });
                     }
                 }
             }
@@ -336,13 +395,13 @@
             }
         });
 
-        var swOnLight2 		= document.getElementById("swOnLight2");
-        var hourOnLight2 	= document.getElementById("hourOnLight2");
-        var minuteOnLight2 	= document.getElementById("minuteOnLight2");
-        var secondOnLight2 	= document.getElementById("secondOnLight2");
+        var swOnLight2 = document.getElementById("swOnLight2");
+        var hourOnLight2 = document.getElementById("hourOnLight2");
+        var minuteOnLight2 = document.getElementById("minuteOnLight2");
+        var secondOnLight2 = document.getElementById("secondOnLight2");
 
-        var swOffLight2 	= document.getElementById("swOffLight2");
-        var hourOffLight2 	= document.getElementById("hourOffLight2");
+        var swOffLight2 = document.getElementById("swOffLight2");
+        var hourOffLight2 = document.getElementById("hourOffLight2");
         var minuteOffLight2 = document.getElementById("minuteOffLight2");
         var secondOffLight2 = document.getElementById("secondOffLight2");
 
@@ -352,23 +411,32 @@
             if (isConnect) {
                 const clickedButton = document.activeElement;
                 if (clickedButton.id === 'getTimeLight2') {
-                    let commandPath = ref(db, 'light2/command');
-                    set(commandPath, 1);
+                    set(commandPath, REQUEST_FB.GETTING_LIGHT2_DATA).then(() => {
+                        console.log("Command GETTING_LIGHT2_DATA sent, waiting for update...");
+                    }).catch((error) => {
+                        console.error("Error setting commandPath:", error);
+                    });
                     onValue(commandPath, (snapshot) => {
                         let value = snapshot.val();
-                        if (value == 0) {
+                        console.log("commandPath value:", value);
+                        if (value == REQUEST_FB.SENT_INFORM) {
                             let dataPath = ref(db, 'light2/data');
-                            onValue(dataPath, (snapshot) => {
+                            get(dataPath).then((snapshot) => {
                                 let timeData = snapshot.val();
-                                swOnLight2.value 		= timeData.swOn;
-                                hourOnLight2.value 		= timeData.hourOn;
-                                minuteOnLight2.value 	= timeData.minuteOn;
-                                secondOnLight2.value 	= timeData.secondOn;
-                                swOffLight2.value 		= timeData.swOff;
-                                hourOffLight2.value 	= timeData.hourOff;
-                                minuteOffLight2.value 	= timeData.minuteOff;
-                                secondOffLight2.value 	= timeData.secondOff;
-                                // console.log(timeData);
+                                if (timeData) {
+                                    swOnLight2.value = timeData.swOn;
+                                    hourOnLight2.value = timeData.hourOn;
+                                    minuteOnLight2.value = timeData.minuteOn;
+                                    secondOnLight2.value = timeData.secondOn;
+                                    swOffLight2.value = timeData.swOff;
+                                    hourOffLight2.value = timeData.hourOff;
+                                    minuteOffLight2.value = timeData.minuteOff;
+                                    secondOffLight2.value = timeData.secondOff;
+                                }
+                                alert("Updated time data");
+                                off(commandPath);
+                            }).catch((error) => {
+                                console.error("Error fetching time data:", error);
                             });
                         }
                     });
@@ -379,25 +447,36 @@
                         alert("Some time field of Light2 is empty");
                     }
                     else {
-                        let commandPath = ref(db, 'light2/command');
-                        set(commandPath, 2);
                         let dataPath = ref(db, 'light2/data');
                         set(dataPath, {
-                            swOn: 		parseInt(swOnLight2.value),
-                            hourOn: 	parseInt(hourOnLight2.value),
-                            minuteOn: 	parseInt(minuteOnLight2.value),
-                            secondOn: 	parseInt(secondOnLight2.value),
-                            swOff: 		parseInt(swOffLight2.value),
-                            hourOff: 	parseInt(hourOffLight2.value),
-                            minuteOff: 	parseInt(minuteOffLight2.value),
-                            secondOff: 	parseInt(secondOffLight2.value),
+                            swOn: parseInt(swOnLight2.value),
+                            hourOn: parseInt(hourOnLight2.value),
+                            minuteOn: parseInt(minuteOnLight2.value),
+                            secondOn: parseInt(secondOnLight2.value),
+                            swOff: parseInt(swOffLight2.value),
+                            hourOff: parseInt(hourOffLight2.value),
+                            minuteOff: parseInt(minuteOffLight2.value),
+                            secondOff: parseInt(secondOffLight2.value),
+                        }).then(() => {
+                            console.log("Data set successfully");
+                        }).catch((error) => {
+                            console.error("Error setting data: ", error);
                         });
-						onValue(commandPath, (snapshot) => {
-                        let value = snapshot.val();
-                        if (value == 0) {
-							alert("Set data successfully");
-							}
-						});
+
+                        set(commandPath, REQUEST_FB.SETTING_LIGHT2_DATA).then(() => {
+                            console.log("Command SETTING_LIGHT2_DATA sent, waiting for update...");
+                        }).catch((error) => {
+                            console.error("Error setting commandPath:", error);
+                        });
+
+                        onValue(commandPath, (snapshot) => {
+                            let value = snapshot.val();
+                            console.log("commandPath value:", value);
+                            if (value == 0) {
+								off(commandPath);
+                                alert("Set Light2 data successfully");
+                            }
+                        });
                     }
                 }
             }
@@ -406,13 +485,13 @@
             }
         });
 
-        var swOnLight3 		= document.getElementById("swOnLight3");
-        var hourOnLight3 	= document.getElementById("hourOnLight3");
-        var minuteOnLight3 	= document.getElementById("minuteOnLight3");
-        var secondOnLight3 	= document.getElementById("secondOnLight3");
+        var swOnLight3 = document.getElementById("swOnLight3");
+        var hourOnLight3 = document.getElementById("hourOnLight3");
+        var minuteOnLight3 = document.getElementById("minuteOnLight3");
+        var secondOnLight3 = document.getElementById("secondOnLight3");
 
-        var swOffLight3 	= document.getElementById("swOffLight3");
-        var hourOffLight3 	= document.getElementById("hourOffLight3");
+        var swOffLight3 = document.getElementById("swOffLight3");
+        var hourOffLight3 = document.getElementById("hourOffLight3");
         var minuteOffLight3 = document.getElementById("minuteOffLight3");
         var secondOffLight3 = document.getElementById("secondOffLight3");
 
@@ -422,24 +501,32 @@
             if (isConnect) {
                 const clickedButton = document.activeElement;
                 if (clickedButton.id === 'getTimeLight3') {
-                    let commandPath = ref(db, 'light3/command');
-                    set(commandPath, 1);
+                    set(commandPath, REQUEST_FB.GETTING_LIGHT3_DATA).then(() => {
+                        console.log("Command GETTING_LIGHT1_DATA sent, waiting for update...");
+                    }).catch((error) => {
+                        console.error("Error setting commandPath:", error);
+                    });
                     onValue(commandPath, (snapshot) => {
                         let value = snapshot.val();
-                        if (value == 0) {
+                        console.log("commandPath value:", value);
+                        if (value == REQUEST_FB.SENT_INFORM) {
                             let dataPath = ref(db, 'light3/data');
-                            onValue(dataPath, (snapshot) => {
-								alert("Data received");
-                                let timeData 			= snapshot.val();
-                                swOnLight3.value 		= timeData.swOn;
-                                hourOnLight3.value 		= timeData.hourOn;
-                                minuteOnLight3.value 	= timeData.minuteOn;
-                                secondOnLight3.value 	= timeData.secondOn;
-                                swOffLight3.value 		= timeData.swOff;
-                                hourOffLight3.value 	= timeData.hourOff;
-                                minuteOffLight3.value 	= timeData.minuteOff;
-                                secondOffLight3.value 	= timeData.secondOff;
-                                // console.log(timeData);
+                            get(dataPath).then((snapshot) => {
+                                let timeData = snapshot.val();
+                                if (timeData) {
+                                    swOnLight3.value = timeData.swOn;
+                                    hourOnLight3.value = timeData.hourOn;
+                                    minuteOnLight3.value = timeData.minuteOn;
+                                    secondOnLight3.value = timeData.secondOn;
+                                    swOffLight3.value = timeData.swOff;
+                                    hourOffLight3.value = timeData.hourOff;
+                                    minuteOffLight3.value = timeData.minuteOff;
+                                    secondOffLight3.value = timeData.secondOff;
+                                }
+                                alert("Updated time data");
+                                off(commandPath);
+                            }).catch((error) => {
+                                console.error("Error fetching time data:", error);
                             });
                         }
 
@@ -451,25 +538,36 @@
                         alert("Some time field of Light3 is empty");
                     }
                     else {
-                        let commandPath = ref(db, 'light3/command');
-                        set(commandPath, 2);
                         let dataPath = ref(db, 'light3/data');
                         set(dataPath, {
-                            swOn: 		parseInt(swOnLight3.value),
-                            hourOn: 	parseInt(hourOnLight3.value),
-                            minuteOn: 	parseInt(minuteOnLight3.value),
-                            secondOn: 	parseInt(secondOnLight3.value),
-                            swOff: 		parseInt(swOffLight3.value),
-                            hourOff: 	parseInt(hourOffLight3.value),
-                            minuteOff: 	parseInt(minuteOffLight3.value),
-                            secondOff: 	parseInt(secondOffLight3.value),
+                            swOn: parseInt(swOnLight3.value),
+                            hourOn: parseInt(hourOnLight3.value),
+                            minuteOn: parseInt(minuteOnLight3.value),
+                            secondOn: parseInt(secondOnLight3.value),
+                            swOff: parseInt(swOffLight3.value),
+                            hourOff: parseInt(hourOffLight3.value),
+                            minuteOff: parseInt(minuteOffLight3.value),
+                            secondOff: parseInt(secondOffLight3.value),
+                        }).then(() => {
+                            console.log("Data set successfully");
+                        }).catch((error) => {
+                            console.error("Error setting data: ", error);
                         });
-						onValue(commandPath, (snapshot) => {
-                        let value = snapshot.val();
-                        if (value == 0) {
-							alert("Set data successfully");
-							}
-						});
+
+                        set(commandPath, REQUEST_FB.SETTING_LIGHT3_DATA).then(() => {
+                            console.log("Command SETTING_LIGHT1_DATA sent, waiting for update...");
+                        }).catch((error) => {
+                            console.error("Error setting commandPath:", error);
+                        });
+
+                        onValue(commandPath, (snapshot) => {
+                            let value = snapshot.val();
+                            console.log("commandPath value:", value);
+                            if (value == 0) {
+								off(commandPath);
+                                alert("Set Light3 data successfully");
+                            }
+                        });
                     }
                 }
             }
@@ -478,13 +576,13 @@
             }
         });
 
-        var swOnLight4 		= document.getElementById("swOnLight4");
-        var hourOnLight4 	= document.getElementById("hourOnLight4");
-        var minuteOnLight4 	= document.getElementById("minuteOnLight4");
-        var secondOnLight4 	= document.getElementById("secondOnLight4");
+        var swOnLight4 = document.getElementById("swOnLight4");
+        var hourOnLight4 = document.getElementById("hourOnLight4");
+        var minuteOnLight4 = document.getElementById("minuteOnLight4");
+        var secondOnLight4 = document.getElementById("secondOnLight4");
 
-        var swOffLight4 	= document.getElementById("swOffLight4");
-        var hourOffLight4 	= document.getElementById("hourOffLight4");
+        var swOffLight4 = document.getElementById("swOffLight4");
+        var hourOffLight4 = document.getElementById("hourOffLight4");
         var minuteOffLight4 = document.getElementById("minuteOffLight4");
         var secondOffLight4 = document.getElementById("secondOffLight4");
 
@@ -494,26 +592,36 @@
             if (isConnect) {
                 const clickedButton = document.activeElement;
                 if (clickedButton.id === 'getTimeLight4') {
-                    let commandPath = ref(db, 'light4/command');
-                    set(commandPath, 1);
+                    set(commandPath, REQUEST_FB.GETTING_LIGHT4_DATA).then(() => {
+                        console.log("Command GETTING_LIGHT4_DATA sent, waiting for update...");
+                    }).catch((error) => {
+                        console.error("Error setting commandPath:", error);
+                    });
+
                     onValue(commandPath, (snapshot) => {
                         let value = snapshot.val();
-                        if (value == 0) {
-                            let data = ref(db, 'light4/data');
-                            onValue(data, (snapshot) => {
-                                let timeData 			= snapshot.val();
-                                swOnLight4.value 		= timeData.swOn;
-                                hourOnLight4.value 		= timeData.hourOn;
-                                minuteOnLight4.value 	= timeData.minuteOn;
-                                secondOnLight4.value 	= timeData.secondOn;
-                                swOffLight4.value 		= timeData.swOff;
-                                hourOffLight4.value 	= timeData.hourOff;
-                                minuteOffLight4.value 	= timeData.minuteOff;
-                                secondOffLight4.value 	= timeData.secondOff;
+                        console.log("commandPath value:", value);
+                        if (value == REQUEST_FB.SENT_INFORM) {
+                            let dataPath = ref(db, 'light4/data');
+                            get(dataPath).then((snapshot) => {
+                                let timeData = snapshot.val();
+                                if (timeData) {
+                                    swOnLight4.value = timeData.swOn;
+                                    hourOnLight4.value = timeData.hourOn;
+                                    minuteOnLight4.value = timeData.minuteOn;
+                                    secondOnLight4.value = timeData.secondOn;
+                                    swOffLight4.value = timeData.swOff;
+                                    hourOffLight4.value = timeData.hourOff;
+                                    minuteOffLight4.value = timeData.minuteOff;
+                                    secondOffLight4.value = timeData.secondOff;
+                                }
+                                alert("Updated time data");
+                                off(commandPath);
                                 // console.log(timeData);
+                            }).catch((error) => {
+                                console.error("Error fetching time data:", error);
                             });
                         }
-
                     });
                 }
                 else if (clickedButton.id === 'setTimeLight4') {
@@ -522,25 +630,36 @@
                         alert("Some time field of Light4 is empty");
                     }
                     else {
-                        let commandPath = ref(db, 'light4/command');
-                        set(commandPath, 2);
                         let dataPath = ref(db, 'light4/data');
                         set(dataPath, {
-                            swOn: 		parseInt(swOnLight4.value),
-                            hourOn: 	parseInt(hourOnLight4.value),
-                            minuteOn: 	parseInt(minuteOnLight4.value),
-                            secondOn: 	parseInt(secondOnLight4.value),
-                            swOff: 		parseInt(swOffLight4.value),
-                            hourOff: 	parseInt(hourOffLight4.value),
-                            minuteOff: 	parseInt(minuteOffLight4.value),
-                            secondOff: 	parseInt(secondOffLight4.value),
+                            swOn: parseInt(swOnLight4.value),
+                            hourOn: parseInt(hourOnLight4.value),
+                            minuteOn: parseInt(minuteOnLight4.value),
+                            secondOn: parseInt(secondOnLight4.value),
+                            swOff: parseInt(swOffLight4.value),
+                            hourOff: parseInt(hourOffLight4.value),
+                            minuteOff: parseInt(minuteOffLight4.value),
+                            secondOff: parseInt(secondOffLight4.value),
+                        }).then(() => {
+                            console.log("Data set successfully");
+                        }).catch((error) => {
+                            console.error("Error setting data: ", error);
                         });
-						onValue(commandPath, (snapshot) => {
-                        let value = snapshot.val();
-                        if (value == 0) {
-							alert("Set data successfully");
-							}
-						});
+
+                        set(commandPath, REQUEST_FB.SETTING_LIGHT4_DATA).then(() => {
+                            console.log("Command SETTING_LIGHT4_DATA sent, waiting for update...");
+                        }).catch((error) => {
+                            console.error("Error setting commandPath:", error);
+                        });
+
+                        onValue(commandPath, (snapshot) => {
+                            let value = snapshot.val();
+                            console.log("commandPath value:", value);
+                            if (value == REQUEST_FB.SENT_INFORM) {
+								off(commandPath);
+                                alert("Set Light4 data successfully");
+                            }
+                        });
                     }
                 }
             }
@@ -560,51 +679,89 @@
             if (isConnect) {
                 const clickedButton = document.activeElement;
                 if (clickedButton.id === 'getStatus') {
-                    let commandPath = ref(db, 'status/command');
-                    set(commandPath, 1);
+                    set(commandPath, REQUEST_FB.GETTING_ALL_STATUS).then(() => {
+                        console.log("Command GETTING_ALL_STATUS sent, waiting for update...");
+                    }).catch((error) => {
+                        console.error("Error setting commandPath:", error);
+                    });
                     onValue(commandPath, (snapshot) => {
                         let value = snapshot.val();
-                        if (value == 0) {
+                        console.log("commandPath value:", value);
+                        if (value == REQUEST_FB.SENT_INFORM) {
                             let dataPath = ref(db, 'status/data');
-                            onValue(dataPath, (snapshot) => {
-								//alert("Get status successfully!!!");
+                            get(dataPath).then((snapshot) => {
+                                //alert("Get status successfully!!!");
                                 let timeData = snapshot.val();
-                                statusLight1.value = timeData.light1;
-                                statusLight2.value = timeData.light2;
-                                statusLight3.value = timeData.light3;
-                                statusLight4.value = timeData.light4;
+                                if (timeData) {
+                                    statusLight1.value = timeData.light1;
+                                    statusLight2.value = timeData.light2;
+                                    statusLight3.value = timeData.light3;
+                                    statusLight4.value = timeData.light4;
+                                }
                                 // console.log(timeData);
+                                alert("Updated time data");
+                                off(commandPath);
+                            }).catch((error) => {
+                                console.error("Error fetching time data:", error);
                             });
                         }
                     });
                 }
                 else if (clickedButton.id === 'setStatusLight1') {
-                    let commandPath = ref(db, 'status/command');
-                    set(commandPath, 4);
                     let dataPath = ref(db, 'status/data/light1');
                     let value = parseInt(statusLight1.value == "1" ? "1" : "0");
-                    set(dataPath, value);
+                    set(dataPath, value).then(() => {
+                        console.log("Data set successfully");
+                    }).catch((error) => {
+                        console.error("Error setting data: ", error);
+                    });
+                    set(commandPath, REQUEST_FB.SETTING_LIGHT1_STATUS).then(() => {
+                        console.log("Command SETTING_LIGHT1_DATA sent, waiting for update...");
+                    }).catch((error) => {
+                        console.error("Error setting commandPath:", error);
+                    });
                 }
                 else if (clickedButton.id === 'setStatusLight2') {
-                    let commandPath = ref(db, 'status/command');
-                    set(commandPath, 5);
                     let dataPath = ref(db, 'status/data/light2');
                     let value = parseInt(statusLight2.value == "1" ? "1" : "0");
-                    set(dataPath, value);
+                    set(dataPath, value).then(() => {
+                        console.log("Data set successfully");
+                    }).catch((error) => {
+                        console.error("Error setting data: ", error);
+                    });
+                    set(commandPath, REQUEST_FB.SETTING_LIGHT2_STATUS).then(() => {
+                        console.log("Command SETTING_LIGHT2_STATUS sent, waiting for update...");
+                    }).catch((error) => {
+                        console.error("Error setting commandPath:", error);
+                    });
                 }
                 else if (clickedButton.id === 'setStatusLight3') {
-                    let commandPath = ref(db, 'status/command');
-                    set(commandPath, 6);
                     let dataPath = ref(db, 'status/data/light3');
                     let value = parseInt(statusLight3.value == "1" ? "1" : "0");
-                    set(dataPath, value);
+                    set(dataPath, value).then(() => {
+                        console.log("Data set successfully");
+                    }).catch((error) => {
+                        console.error("Error setting data: ", error);
+                    });
+                    set(commandPath, REQUEST_FB.SETTING_LIGHT3_STATUS).then(() => {
+                        console.log("Command SETTING_LIGHT3_STATUS sent, waiting for update...");
+                    }).catch((error) => {
+                        console.error("Error setting commandPath:", error);
+                    });
                 }
                 else if (clickedButton.id === 'setStatusLight4') {
-                    let commandPath = ref(db, 'status/command');
-                    set(commandPath, 7);
                     let dataPath = ref(db, 'status/data/light4');
                     let value = parseInt(statusLight4.value == "1" ? "1" : "0");
-                    set(dataPath, value);
+                    set(dataPath, value).then(() => {
+                        console.log("Data set successfully");
+                    }).catch((error) => {
+                        console.error("Error setting data: ", error);
+                    });
+                    set(commandPath, REQUEST_FB.SETTING_LIGHT4_STATUS).then(() => {
+                        console.log("Command SETTING_LIGHT4_STATUS sent, waiting for update...");
+                    }).catch((error) => {
+                        console.error("Error setting commandPath:", error);
+                    });
                 }
             }
         });

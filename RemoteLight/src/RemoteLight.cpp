@@ -19,7 +19,7 @@ RemoteLight::RemoteLight()
 	mFlagConnectNTP = 0;
 	mFlagUpdateRTC = 0;
 
-	mTimerMgr = std::make_shared<TimerManager>(4);
+	mTimerMgr = std::make_shared<TimerManager>(5);
 	mTimerConnectWifi = mTimerMgr->createTimer([this]()
 											   { this->onTimeout(SignaLType::TIMER_CONNECT_WIFI_SIGNAL); }, DELAY_3S);
 
@@ -30,7 +30,10 @@ RemoteLight::RemoteLight()
 													{ this->onTimeout(SignaLType::TIMER_DISPLAY_ALL_SETUP_MODE_SIGNAL); }, DELAY_3S);
 
 	mTimerCheckConfiguredTimeForLight = mTimerMgr->createTimer([this]()
-															{ this->onTimeout(SignaLType::TIMER_CHECK_CONFIGURED_TIME_FOR_LIGHT); }, DELAY_1S);
+												{ this->onTimeout(SignaLType::TIMER_CHECK_CONFIGURED_TIME_FOR_LIGHT); }, DELAY_1S);
+
+	mTimerUpdateAndAdjustForRTC = mTimerMgr->createTimer([this]()
+													{this->onTimeout(SignaLType::TIMER_ADJUST_TIME_DATE_FOR_RTC); }, DELAY_3D);
 	LOGI("Initialization RemoteLight!");
 }
 
@@ -282,7 +285,10 @@ void RemoteLight::handleSignal(const SignaLType signal, Package *data)
 		mCounterConnectWifi = 0;
 		mFlagConnectNTP = 1;
 		mLCD->handleSignal(SignaLType::LCD_CONNECT_NTP_SUCCESS);
-		mSerial->handleSignal(SignaLType::REMOTE_LIGHT_GET_TIME_DATE_FROM_NTP);
+		// mSerial->handleSignal(SignaLType::REMOTE_LIGHT_GET_TIME_DATE_FROM_NTP);
+		mTimerUpdateAndAdjustForRTC->updateTimer([this]()
+													{this->onTimeout(SignaLType::TIMER_UPDATE_TIME_DATE_FOR_RTC); }, DELAY_1D);
+		mTimerUpdateAndAdjustForRTC->startTimer();
 		delay(1000);
 		mLCD->handleSignal(SignaLType::LCD_CLEAR_SCREEN);
 		setControlMode(CONTROL_MODE::DISPLAY_ALL);
@@ -446,6 +452,7 @@ void RemoteLight::onTimeout(const SignaLType signal)
 		}
 		else {
 			mTimerConnectWifi->stopTimer();
+			mTimerUpdateAndAdjustForRTC->startTimer();
 			setStateConnect(STATE_CONNECT::NOK);
 			mCounterConnectWifi = 0;
 			mLCD->handleSignal(SignaLType::LCD_CONNECT_FIREBASE_FAILED);
@@ -483,15 +490,6 @@ void RemoteLight::onTimeout(const SignaLType signal)
 			setControlMode(CONTROL_MODE::NONE);
 			mLCD->handleSignal(SignaLType::LCD_CLEAR_TURN_OFF_SCREEN);
 			mTimerDisplayAll->stopTimer();
-			if(mFlagConnectNTP == 1) {
-				mTimerConnectWifi->updateTimer([this]()
-					{this->onTimeout(SignaLType::TIMER_UPDATE_TIME_DATE_FOR_RTC); }, DELAY_1D);
-			}
-			else {
-				mTimerConnectWifi->updateTimer([this]()
-					{this->onTimeout(SignaLType::TIMER_ADJUST_TIME_DATE_FOR_RTC); }, DELAY_3D);
-			}
-			mTimerConnectWifi->startTimer();
 		}
 		break;
 	case SignaLType::TIMER_DISPLAY_ALL_SETUP_MODE_SIGNAL:

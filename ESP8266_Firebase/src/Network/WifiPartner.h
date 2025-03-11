@@ -19,7 +19,7 @@ class WifiPartner : public Network
 {
 public:
     WifiPartner(Processor *processor);
-    ~WifiPartner() {};
+    ~WifiPartner() {delete mTimeClient;};
     WifiPartner(const WifiPartner &) = delete;
     WifiPartner &operator=(const WifiPartner &) = delete;
 
@@ -39,13 +39,11 @@ private:
     void signUp();
     void connectWifi();
     void checkConnectNTP();
-    void checkAlltimeCommandFirebase();
+    void checkCommandFirebase();
     void sendAllTimeDatatoWeb(Package *data);
     void sendLightDataToWeb(Package *data, int lightIndex);
     void sendLightStatusToWeb(Package *data);
-    void sendResponseSetLightDatatoWeb(int lightIndex);
-    void checkLightCommandFromFirebase(SignalType signalGetRequest, SignalType signalSetRequest, int lightIndex);
-    void checkStatusCommandFromFirebase();
+    void sendResponseSetLightDatatoWeb();
     void getTimeDataFromNtp();
 
     int8_t mCommandAllTimerFlag;
@@ -67,13 +65,22 @@ private:
     enum REQUEST_FB : int
     {
         SENT_INFORM = 0,
-        GETTING,
-        SETTING,
         IDLE,
-        SETTING_LIGHT1,
-        SETTING_LIGHT2,
-        SETTING_LIGHT3,
-        SETTING_LIGHT4,
+        GETTING_ALLTIME_DATA,
+        SETTING_ALLTIME_DATA,
+        GETTING_LIGHT1_DATA,
+        SETTING_LIGHT1_DATA,
+        GETTING_LIGHT2_DATA,
+        SETTING_LIGHT2_DATA,
+        GETTING_LIGHT3_DATA,
+        SETTING_LIGHT3_DATA,
+        GETTING_LIGHT4_DATA,
+        SETTING_LIGHT4_DATA,
+        GETTING_ALL_STATUS,
+        SETTING_LIGHT1_STATUS,
+        SETTING_LIGHT2_STATUS,
+        SETTING_LIGHT3_STATUS,
+        SETTING_LIGHT4_STATUS,
     };
 
     std::map<REQUEST_FB, std::pair<SignalType, int>> mRequestSignalMap;

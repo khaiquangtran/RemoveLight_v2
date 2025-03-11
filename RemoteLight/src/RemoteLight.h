@@ -59,12 +59,13 @@ private:
 	std::shared_ptr<Timer> mTimerDisplayAll;
 	std::shared_ptr<Timer> mTimerDisplaySetupMode;
 	std::shared_ptr<Timer> mTimerCheckConfiguredTimeForLight;
+	std::shared_ptr<Timer> mTimerUpdateAndAdjustForRTC;
 
 	const uint16_t DELAY_1S  	= 1000U;
-	const uint16_t DELAY_3S  	= 3000U;
-	const uint16_t DELAY_5S  	= 5000U;
+	const uint16_t DELAY_3S  	= DELAY_1S * 3;
+	const uint16_t DELAY_5S  	= DELAY_1S * 5;
 	const uint32_t DELAY_1D  	= 86400000U;
-	const uint32_t DELAY_3D  	= 86400000U*3;
+	const uint32_t DELAY_3D  	= DELAY_1D * 3;
 	const uint8_t REPEATS_30  	= 30U;
 	const uint8_t REPEATS_10  	= 10U;
 

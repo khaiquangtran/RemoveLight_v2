@@ -305,11 +305,11 @@ bool RTC::setTimeData(struct TimeDS1307 data)
     } fields[] = {
         {data.second, REG_SEC, 0, 59, "SECOND"},
         {data.minute, REG_MIN, 0, 59, "MINUTE"},
-        {data.hour, REG_HOUR, 1, 23, "HOUR"},
+        {data.hour, REG_HOUR, 0, 23, "HOUR"},
         {data.day, REG_DAY, 1, 7, "DAY"},
         {data.date, REG_DATE, 1, 31, "DATE"},
         {data.month, REG_MTH, 1, 12, "MONTH"},
-        {static_cast<uint8_t>(data.year - 2000), REG_YEAR, 0, 99, "YEAR"} // Lưu dưới dạng year - 2000
+        {static_cast<uint8_t>(data.year - 2000), REG_YEAR, 0, 99, "YEAR"} // Save as year - 2000
     };
 	for (const auto& field : fields) {
         if (field.value < field.min || field.value > field.max) {
@@ -677,7 +677,7 @@ void RTC::decreaseValueOfMenuMode()
 			mTimeOfLight[LISTLIGHT[mIndexListLight]].second.second.sw = 1U;
 		}
 		else if (mTimeOfLight[LISTLIGHT[mIndexListLight]].second.second.sw) {
-			mTimeOfLight[LISTLIGHT[mIndexListLight]].second.second.sw = 0U; 
+			mTimeOfLight[LISTLIGHT[mIndexListLight]].second.second.sw = 0U;
 		}
 		break;
 	case 5:

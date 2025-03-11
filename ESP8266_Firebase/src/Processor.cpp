@@ -42,6 +42,10 @@ void Processor::handleSignal(const SignalType signal, Package *data)
     case SignalType::REMOTE_LIGHT_GET_TIME_DATE_FROM_NTP:
     case SignalType::WEB_SET_ALLTIME_DATA_RESPONSE:
     case SignalType::WEB_SET_STATUS_LIGHT_DATA_RESPONSE:
+    case SignalType::WEB_SET_LIGHT1_DATA_RESPONSE:
+    case SignalType::WEB_SET_LIGHT2_DATA_RESPONSE:
+    case SignalType::WEB_SET_LIGHT3_DATA_RESPONSE:
+    case SignalType::WEB_SET_LIGHT4_DATA_RESPONSE:
         mWIFI->handleSignal(signal);
         break;
     case SignalType::CONNECT_WIFI_FAILED:
@@ -84,6 +88,10 @@ void Processor::handleSignal(const SignalType signal, Package *data)
     case SignalType::WEB_SET_STATUS_LIGHT3_DATA_REQUEST:
     case SignalType::WEB_SET_STATUS_LIGHT4_DATA_REQUEST:
     case SignalType::REMOTE_LIGHT_SEND_TIME_DATE_FROM_NTP:
+    case SignalType::WEB_SET_LIGHT1_DATA_REQUEST:
+    case SignalType::WEB_SET_LIGHT2_DATA_REQUEST:
+    case SignalType::WEB_SET_LIGHT3_DATA_REQUEST:
+    case SignalType::WEB_SET_LIGHT4_DATA_REQUEST:
         mSERIAL->handleSignal(signal, data);
         break;
     default:

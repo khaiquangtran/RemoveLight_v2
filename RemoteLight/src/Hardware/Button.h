@@ -18,14 +18,14 @@ public:
 
   void listenning() override;
 
-  void handleSignal(const SignaLType signal, Package *data = nullptr);
+  void handleSignal(const SignalType signal, Package *data = nullptr);
 
 private:
-  void addButton(uint8_t pin, SignaLType signal);
+  void addButton(uint8_t pin, SignalType signal);
 
 private:
   RemoteLight *mRML;
-  std::map<uint8_t, std::pair<std::pair<UL, stateButton>, SignaLType>> mListButton;
+  std::map<uint8_t, std::pair<std::pair<UL, stateButton>, SignalType>> mListButton;
   const UL DEPAY = 50U;
   const uint8_t pinButton_1 = 12U;
   const uint8_t pinButton_2 = 14U;

@@ -74,7 +74,7 @@ LCD16x2::~LCD16x2()
 	delete[] DAY[7];
 }
 
-void LCD16x2::handleSignal(const SignaLType signal, Package *data)
+void LCD16x2::handleSignal(const SignalType signal, Package *data)
 {
 	if (mRetry >= RETRY)
 	{
@@ -86,7 +86,7 @@ void LCD16x2::handleSignal(const SignaLType signal, Package *data)
 		// LOGD("Handle signal value: %d", signal);
 		switch (signal)
 		{
-		case (SignaLType::LCD_DISPLAY_ALL_TIME):
+		case (SignalType::LCD_DISPLAY_ALL_TIME):
 		{
 			int *value = data->getPackage();
 			mReceiverTime.second 	= static_cast<uint8_t>(*value++);
@@ -99,67 +99,67 @@ void LCD16x2::handleSignal(const SignaLType signal, Package *data)
 			displayTimeFromDS1307(mReceiverTime);
 			break;
 		}
-		case (SignaLType::LCD_CLEAR_TURN_OFF_SCREEN):
+		case (SignalType::LCD_CLEAR_TURN_OFF_SCREEN):
 			mLCD->clear();
 			mLCD->noBacklight();
 			break;
-		case (SignaLType::LCD_CLEAR_SCREEN):
+		case (SignalType::LCD_CLEAR_SCREEN):
 			mLCD->clear();
 			break;
-		case (SignaLType::IR_BTN_APP_SIGNAL):
+		case (SignalType::IR_BTN_APP_SIGNAL):
 			displayStartSetupMode();
 			break;
-		case (SignaLType::LCD_TURN_ON_LIGHT):
+		case (SignalType::LCD_TURN_ON_LIGHT):
 			mLCD->backlight();
 			break;
-		case (SignaLType::LCD_DISPLAY_END_SETUP_MODE):
+		case (SignalType::LCD_DISPLAY_END_SETUP_MODE):
 			displayEndSetupMode();
 			break;
-		case (SignaLType::IR_BTN_MENU_SIGNAL):
+		case (SignalType::IR_BTN_MENU_SIGNAL):
 			displayMenuMode(0);
 			break;
-		case (SignaLType::LCD_MENU_MODE_BACK):
-		case (SignaLType::LCD_MOVE_RIGHT_MENU_MODE):
-		case (SignaLType::LCD_MOVE_LEFT_MENU_MODE):
+		case (SignalType::LCD_MENU_MODE_BACK):
+		case (SignalType::LCD_MOVE_RIGHT_MENU_MODE):
+		case (SignalType::LCD_MOVE_LEFT_MENU_MODE):
 		{
 			int *value = data->getPackage();
 			displayMenuMode(*value);
 			break;
 		}
-		case (SignaLType::LCD_MENU_MODE_OK):
+		case (SignalType::LCD_MENU_MODE_OK):
 		{
 			int *value = data->getPackage();
 			displaySelectedMenuMode(value);
 			break;
 		}
-		case (SignaLType::LCD_DISPLAY_START_CONNECT_WIFI):
+		case (SignalType::LCD_DISPLAY_START_CONNECT_WIFI):
 			displayStartConnectWifi();
 			break;
-		case (SignaLType::LCD_DISPLAY_CONNECT_WIFI):
+		case (SignalType::LCD_DISPLAY_CONNECT_WIFI):
 			displayConnectingWifi();
 			break;
-		case (SignaLType::LCD_CONNECT_WIFI_SUCCESS):
+		case (SignalType::LCD_CONNECT_WIFI_SUCCESS):
 			displayConnectWifiSuccess();
 			break;
-		case (SignaLType::LCD_CONNECT_WIFI_FAILED):
+		case (SignalType::LCD_CONNECT_WIFI_FAILED):
 			displayConnectWifiFailed();
 			break;
-		case (SignaLType::LCD_DISPLAY_START_CONNECT_FIREBASE):
+		case (SignalType::LCD_DISPLAY_START_CONNECT_FIREBASE):
 			displayStartConnectFirebase();
 			break;
-		case (SignaLType::LCD_DISPLAY_START_CONNECT_NTP):
+		case (SignalType::LCD_DISPLAY_START_CONNECT_NTP):
 			displayStartConnectNTP();
 			break;
-		case (SignaLType::LCD_CONNECT_FIREBASE_SUCCESS):
+		case (SignalType::LCD_CONNECT_FIREBASE_SUCCESS):
 			displayConnectFirebaseSuccess();
 			break;
-		case (SignaLType::LCD_CONNECT_NTP_SUCCESS):
+		case (SignalType::LCD_CONNECT_NTP_SUCCESS):
 			displayConnectNTPSuccess();
 			break;
-		case (SignaLType::LCD_CONNECT_FIREBASE_FAILED):
+		case (SignalType::LCD_CONNECT_FIREBASE_FAILED):
 			displayConnectFBFailed();
 			break;
-		case (SignaLType::LCD_CONNECT_NTP_FAILED):
+		case (SignalType::LCD_CONNECT_NTP_FAILED):
 			displayConnectNTPFailed();
 			break;
 		default:

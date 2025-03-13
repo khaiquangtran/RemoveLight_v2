@@ -21,9 +21,9 @@ public:
 	void init();
 	void run();
 
-	void handleSignal(const SignaLType signal, Package *data = nullptr);
+	void handleSignal(const SignalType signal, Package *data = nullptr);
 
-	void onTimeout(const SignaLType signal = SignaLType::NONE);
+	void onTimeout(const SignalType signal = SignalType::NONE);
 
 private:
 	enum class CONTROL_MODE : uint8_t
@@ -59,7 +59,6 @@ private:
 	std::shared_ptr<Timer> mTimerDisplayAll;
 	std::shared_ptr<Timer> mTimerDisplaySetupMode;
 	std::shared_ptr<Timer> mTimerCheckConfiguredTimeForLight;
-	std::shared_ptr<Timer> mTimerUpdateAndAdjustForRTC;
 
 	const uint16_t DELAY_1S  	= 1000U;
 	const uint16_t DELAY_3S  	= DELAY_1S * 3;
@@ -75,13 +74,14 @@ private:
 
 	std::mutex mMutex;
 	std::mutex mMutex2;
-	std::mutex mMutex3;
 
 	int8_t mFlagConnectNTP;
 	int8_t mFlagUpdateRTC;
 
 	STATE_CONNECT mStateConnect;
 	CONTROL_MODE mControlMode;
+
+	uint8_t mFlagInstallIRButton;
 
 	void connectWifiMode();
 	void displayAllTime();

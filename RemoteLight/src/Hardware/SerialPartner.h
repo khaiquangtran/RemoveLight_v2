@@ -15,7 +15,7 @@ public:
     SerialPartner(const SerialPartner &) = delete;
     SerialPartner &operator=(const SerialPartner &) = delete;
 
-    void handleSignal(const SignaLType signal, Package *data = nullptr);
+    void handleSignal(const SignalType signal, Package *data = nullptr);
 
     void listenning() override;
 
@@ -27,7 +27,7 @@ private:
 
     void handleMessage(String receiverData);
 
-    std::map<SignaLType, String> mCommandHandle;
+    std::map<SignalType, String> mCommandHandle;
 };
 
 #endif // SERIAL_PARTNER_H

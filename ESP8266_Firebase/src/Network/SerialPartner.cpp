@@ -11,6 +11,7 @@ SerialPartner::SerialPartner(Processor *processor) : mProcessor(processor)
     mCommandHandle[SignalType::STATUS_NTP]                              = "0003";
     mCommandHandle[SignalType::CONNECT_WIFI_SUCCESSFULL]                = "1001";
     mCommandHandle[SignalType::CONNECT_WIFI_FAILED]                     = "1002";
+    mCommandHandle[SignalType::CONNECT_RETRY]                           = "1003";
     mCommandHandle[SignalType::CONNECT_FIREBASE_SUCCESSFULL]            = "2002";
     mCommandHandle[SignalType::CONNECT_FIREBASE_FAILED]                 = "2003";
     mCommandHandle[SignalType::CONNECT_NTP_SUCCESSFULL]                 = "3002";
@@ -90,6 +91,7 @@ void SerialPartner::handleSignal(const SignalType signal, Package *data)
     case SignalType::WEB_GET_LIGHT3_DATA_REQUEST:
     case SignalType::WEB_GET_LIGHT4_DATA_REQUEST:
     case SignalType::WEB_GET_STATUS_DATA_REQUEST:
+    case SignalType::CONNECT_RETRY:
     {
         mSerial2->write(mCommandHandle[signal].c_str());
         break;

@@ -18,7 +18,7 @@ public:
 	RTC(const RTC &) = delete;
 	RTC &operator=(const RTC &) = delete;
 
-	void handleSignal(const SignaLType signal, Package *data = nullptr);
+	void handleSignal(const SignalType signal, Package *data = nullptr);
 
 private:
 	RemoteLight *mRML;
@@ -32,7 +32,7 @@ private:
 	bool setTimeLight(String light, struct TimeOfLight time, struct REG_TIME_LIGHT reg);
 
 	void getResponse(struct TimeOfLight *time, uint8_t REG);
-	void sendAllTimeData(const SignaLType signal);
+	void sendAllTimeData(const SignalType signal);
 	void increaseValueOfTimeData();
 	void decreaseValueOfTimeData();
 	void shiftIndexOfAllTimeData(bool adjust);
@@ -43,10 +43,11 @@ private:
 	struct TimeOfLight getTimeOfLight(uint8_t reg);
 	void checkConfigureTimeForLight();
 	void requestSetTimeAllData(Package *data);
-	void sendLightDataToWeb(const SignaLType signal);
-	void requestSetLightData(Package *data, const SignaLType signal);
+	void sendLightDataToWeb(const SignalType signal);
+	void requestSetLightData(Package *data, const SignalType signal);
 	void receiveTimeDateFromNTP(Package *data);
 	void adjustTime();
+	void updateTimeForRTC();
 
 	uint8_t mDS1307Addr;
 	std::map<String, LightMapValue> mTimeOfLight;
@@ -58,8 +59,14 @@ private:
 	uint8_t mIndexLight;
 	uint8_t mCountRetry;
 	const uint8_t RETRY = 3U;
-	std::map<SignaLType, std::pair<int, SignaLType>> mLightGetRequestResponse;
-	std::map<SignaLType, std::pair<int, SignaLType>> mLightSetRequestResponse;
+	std::map<SignalType, std::pair<int, SignalType>> mLightGetRequestResponse;
+	std::map<SignalType, std::pair<int, SignalType>> mLightSetRequestResponse;
+
+	uint8_t mFlagUpdateTIme;
+	uint8_t mPreDate;
+	uint8_t mCounterUpdateTime;
+
+	uint8_t mCounterInstallIRButton;
 };
 
 #endif // RTC_H

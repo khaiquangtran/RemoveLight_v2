@@ -25,7 +25,7 @@ void Processor::init()
 void Processor::run()
 {
     mSERIAL->listen();
-    if (mFlagConnectFirebase == 1)
+    if (mFlagConnectFirebase == 1 && mFlagConnectNTP == 1)
     {
         mWIFI->handleSignal(SignalType::CHECK_COMMAND_FIREBASE);
     }
@@ -93,6 +93,11 @@ void Processor::handleSignal(const SignalType signal, Package *data)
     case SignalType::WEB_SET_LIGHT3_DATA_REQUEST:
     case SignalType::WEB_SET_LIGHT4_DATA_REQUEST:
         mSERIAL->handleSignal(signal, data);
+        break;
+    case SignalType::CONNECT_RETRY:
+        mSERIAL->handleSignal(signal);
+        mFlagConnectFirebase = -1;
+        mFlagConnectNTP = -1;
         break;
     default:
         break;

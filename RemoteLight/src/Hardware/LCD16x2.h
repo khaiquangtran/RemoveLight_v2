@@ -15,7 +15,7 @@ public:
   LCD16x2(const LCD16x2 &) = delete;
   LCD16x2 &operator=(const LCD16x2 &) = delete;
 
-  void handleSignal(const SignaLType signal, Package *data = nullptr);
+  void handleSignal(const SignalType signal, Package *data = nullptr);
 
 private:
   bool checkAddress();

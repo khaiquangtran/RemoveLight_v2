@@ -246,6 +246,7 @@ void WifiPartner::checkCommandFirebase()
     else {
         Serial.print("error: ");
         Serial.println(mFbdo.errorReason());
+        mProcessor->handleSignal(SignalType::CONNECT_RETRY);
         return;
     }
 }

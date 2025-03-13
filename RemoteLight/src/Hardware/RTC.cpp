@@ -1,6 +1,8 @@
 #include "RTC.h"
 
-RTC::RTC(RemoteLight *rml) : mRML(rml)
+RTC::RTC(RemoteLight *rml) : mRML(rml), mDS1307Addr(0U), mIndexOfAllTimeData(0U), mIndexLight(0U),
+								mIndexListLight(0U), mCountRetry(0U), mFlagUpdateTIme(0U), mPreDate(0U),
+								mCounterUpdateTime(0U), mCounterInstallIRButton(0U)
 {
 	Wire.begin();
 
@@ -17,22 +19,17 @@ RTC::RTC(RemoteLight *rml) : mRML(rml)
 		std::make_pair(REG_TIME_LIGHT{LIGHT4::ON_SWITCH, LIGHT4::ON_HOUR, LIGHT4::ON_MINUTE, LIGHT4::ON_SECOND}, TimeOfLight{0U, 0U, 0U, 0U}),
 		std::make_pair(REG_TIME_LIGHT{LIGHT4::OFF_SWITCH, LIGHT4::OFF_HOUR, LIGHT4::OFF_MINUTE, LIGHT4::OFF_SECOND}, TimeOfLight{0U, 0U, 0U, 0U}));
 
-	mLightGetRequestResponse[SignaLType::WEB_GET_LIGHT1_DATA_REQUEST] = std::make_pair(0, SignaLType::WEB_GET_LIGHT1_DATA_RESPONSE);
-	mLightGetRequestResponse[SignaLType::WEB_GET_LIGHT2_DATA_REQUEST] = std::make_pair(1, SignaLType::WEB_GET_LIGHT2_DATA_RESPONSE);
-	mLightGetRequestResponse[SignaLType::WEB_GET_LIGHT3_DATA_REQUEST] = std::make_pair(2, SignaLType::WEB_GET_LIGHT3_DATA_RESPONSE);
-	mLightGetRequestResponse[SignaLType::WEB_GET_LIGHT4_DATA_REQUEST] = std::make_pair(3, SignaLType::WEB_GET_LIGHT4_DATA_RESPONSE);
+	mLightGetRequestResponse[SignalType::WEB_GET_LIGHT1_DATA_REQUEST] = std::make_pair(0, SignalType::WEB_GET_LIGHT1_DATA_RESPONSE);
+	mLightGetRequestResponse[SignalType::WEB_GET_LIGHT2_DATA_REQUEST] = std::make_pair(1, SignalType::WEB_GET_LIGHT2_DATA_RESPONSE);
+	mLightGetRequestResponse[SignalType::WEB_GET_LIGHT3_DATA_REQUEST] = std::make_pair(2, SignalType::WEB_GET_LIGHT3_DATA_RESPONSE);
+	mLightGetRequestResponse[SignalType::WEB_GET_LIGHT4_DATA_REQUEST] = std::make_pair(3, SignalType::WEB_GET_LIGHT4_DATA_RESPONSE);
 
-	mLightSetRequestResponse[SignaLType::WEB_SET_LIGHT1_DATA_REQUEST] = std::make_pair(0, SignaLType::WEB_SET_LIGHT1_DATA_RESPONSE);
-	mLightSetRequestResponse[SignaLType::WEB_SET_LIGHT2_DATA_REQUEST] = std::make_pair(1, SignaLType::WEB_SET_LIGHT2_DATA_RESPONSE);
-	mLightSetRequestResponse[SignaLType::WEB_SET_LIGHT3_DATA_REQUEST] = std::make_pair(2, SignaLType::WEB_SET_LIGHT3_DATA_RESPONSE);
-	mLightSetRequestResponse[SignaLType::WEB_SET_LIGHT4_DATA_REQUEST] = std::make_pair(3, SignaLType::WEB_SET_LIGHT4_DATA_RESPONSE);
+	mLightSetRequestResponse[SignalType::WEB_SET_LIGHT1_DATA_REQUEST] = std::make_pair(0, SignalType::WEB_SET_LIGHT1_DATA_RESPONSE);
+	mLightSetRequestResponse[SignalType::WEB_SET_LIGHT2_DATA_REQUEST] = std::make_pair(1, SignalType::WEB_SET_LIGHT2_DATA_RESPONSE);
+	mLightSetRequestResponse[SignalType::WEB_SET_LIGHT3_DATA_REQUEST] = std::make_pair(2, SignalType::WEB_SET_LIGHT3_DATA_RESPONSE);
+	mLightSetRequestResponse[SignalType::WEB_SET_LIGHT4_DATA_REQUEST] = std::make_pair(3, SignalType::WEB_SET_LIGHT4_DATA_RESPONSE);
 
-	mDS1307Addr = 0U;
 	mAllTimeData = {0U, 0U, 0U, 0U, 0U, 0U, 0U};
-	mIndexOfAllTimeData = 0U;
-	mIndexListLight = 0U;
-	mIndexLight = 0U;
-	mCountRetry = 0U;
 
 retry:
 	if (checkAddress())
@@ -61,7 +58,7 @@ RTC::~RTC()
 {
 }
 
-void RTC::handleSignal(const SignaLType signal, Package *data)
+void RTC::handleSignal(const SignalType signal, Package *data)
 {
 	if (mCountRetry >= RETRY){
 		LOGE("Can't connect to RTC");
@@ -71,29 +68,29 @@ void RTC::handleSignal(const SignaLType signal, Package *data)
 		LOGD("Handle signal value: %d", signal);
 		switch (signal)
 		{
-		case SignaLType::RTC_DISPLAY_ALL_TIME:
+		case SignalType::RTC_DISPLAY_ALL_TIME:
 			mAllTimeData = getTimeData();
-			sendAllTimeData(SignaLType::LCD_DISPLAY_ALL_TIME);
+			sendAllTimeData(SignalType::LCD_DISPLAY_ALL_TIME);
 			break;
-		case SignaLType::RTC_INCREASE_VALUE:
+		case SignalType::RTC_INCREASE_VALUE:
 			increaseValueOfTimeData();
-			sendAllTimeData(SignaLType::LCD_DISPLAY_ALL_TIME);
+			sendAllTimeData(SignalType::LCD_DISPLAY_ALL_TIME);
 			break;
-		case SignaLType::RTC_DECREASE_VALUE:
+		case SignalType::RTC_DECREASE_VALUE:
 			decreaseValueOfTimeData();
-			sendAllTimeData(SignaLType::LCD_DISPLAY_ALL_TIME);
+			sendAllTimeData(SignalType::LCD_DISPLAY_ALL_TIME);
 			break;
-		case SignaLType::RTC_SHIFT_LEFT_VALUE:
+		case SignalType::RTC_SHIFT_LEFT_VALUE:
 			shiftIndexOfAllTimeData(true);
 			break;
-		case SignaLType::RTC_SHIFT_RIGHT_VALUE:
+		case SignalType::RTC_SHIFT_RIGHT_VALUE:
 			shiftIndexOfAllTimeData(false);
 			break;
-		case SignaLType::RTC_SETUP_MODE_OK:
+		case SignalType::RTC_SETUP_MODE_OK:
 			setTimeData(mAllTimeData);
-			mRML->handleSignal(SignaLType::REMOTE_LIGHT_END_SETUP_MODE);
+			mRML->handleSignal(SignalType::REMOTE_LIGHT_END_SETUP_MODE);
 			break;
-		case SignaLType::RTC_MOVE_LEFT_MENU_MODE:
+		case SignalType::RTC_MOVE_LEFT_MENU_MODE:
 		{
 			if (mIndexListLight > 0U) {
 				mIndexListLight--;
@@ -103,10 +100,10 @@ void RTC::handleSignal(const SignaLType signal, Package *data)
 			}
 			int value = static_cast<int>(mIndexListLight);
 			Package data(&value, 1);
-			mRML->handleSignal(SignaLType::LCD_MOVE_LEFT_MENU_MODE, &data);
+			mRML->handleSignal(SignalType::LCD_MOVE_LEFT_MENU_MODE, &data);
 			break;
 		}
-		case SignaLType::RTC_MOVE_RIGHT_MENU_MODE:
+		case SignalType::RTC_MOVE_RIGHT_MENU_MODE:
 		{
 			if (mIndexListLight < 3U) {
 				mIndexListLight++;
@@ -116,24 +113,24 @@ void RTC::handleSignal(const SignaLType signal, Package *data)
 			}
 			int value = static_cast<int>(mIndexListLight);
 			Package data(&value, 1);
-			mRML->handleSignal(SignaLType::LCD_MOVE_RIGHT_MENU_MODE, &data);
+			mRML->handleSignal(SignalType::LCD_MOVE_RIGHT_MENU_MODE, &data);
 			break;
 		}
-		case SignaLType::RTC_MENU_MODE_OK:
+		case SignalType::RTC_MENU_MODE_OK:
 			mTimeOfLight[LISTLIGHT[mIndexListLight]].first.second = getTimeOfLight(mTimeOfLight[LISTLIGHT[mIndexListLight]].first.first.SWITCH);
 			mTimeOfLight[LISTLIGHT[mIndexListLight]].second.second = getTimeOfLight(mTimeOfLight[LISTLIGHT[mIndexListLight]].second.first.SWITCH);
 			mIndexLight = 0U;
 			sendTimeOfLight();
 			break;
-		case SignaLType::RTC_INCREASE_VALUE_MENU_MODE:
+		case SignalType::RTC_INCREASE_VALUE_MENU_MODE:
 			increaseValueOfMenuMode();
 			sendTimeOfLight();
 			break;
-		case SignaLType::RTC_DECREASE_VALUE_MENU_MODE:
+		case SignalType::RTC_DECREASE_VALUE_MENU_MODE:
 			decreaseValueOfMenuMode();
 			sendTimeOfLight();
 			break;
-		case SignaLType::RTC_MOVE_RIGHT_INTO_MENU_MODE:
+		case SignalType::RTC_MOVE_RIGHT_INTO_MENU_MODE:
 			if (mIndexLight < 7U) {
 				mIndexLight++;
 			}
@@ -141,7 +138,7 @@ void RTC::handleSignal(const SignaLType signal, Package *data)
 				mIndexLight = 0U;
 			}
 			break;
-		case SignaLType::RTC_MOVE_LEFT_INTO_MENU_MODE:
+		case SignalType::RTC_MOVE_LEFT_INTO_MENU_MODE:
 			if (mIndexLight > 0U) {
 				mIndexLight--;
 			}
@@ -149,43 +146,72 @@ void RTC::handleSignal(const SignaLType signal, Package *data)
 				mIndexLight = 7U;
 			}
 			break;
-		case SignaLType::RTC_BACK_MENU_MODE:
+		case SignalType::RTC_BACK_MENU_MODE:
 		{
 			// store data
 			setTimeLight(LISTLIGHT[mIndexListLight], mTimeOfLight[LISTLIGHT[mIndexListLight]].first.second, mTimeOfLight[LISTLIGHT[mIndexListLight]].first.first);
 			setTimeLight(LISTLIGHT[mIndexListLight], mTimeOfLight[LISTLIGHT[mIndexListLight]].second.second, mTimeOfLight[LISTLIGHT[mIndexListLight]].second.first);
 			int value = static_cast<int>(mIndexListLight);
 			Package data(&value, 1);
-			mRML->handleSignal(SignaLType::LCD_MENU_MODE_BACK, &data);
+			mRML->handleSignal(SignalType::LCD_MENU_MODE_BACK, &data);
 			break;
 		}
-		case SignaLType::WEB_GET_ALLTIME_DATA_REQUEST:
+		case SignalType::WEB_GET_ALLTIME_DATA_REQUEST:
 			sendAllTimeDataToWeb();
 			break;
-		case SignaLType::RTC_CHECK_CONFIGURED_TIME_FOR_LIGHT:
+		case SignalType::RTC_CHECK_CONFIGURED_TIME_FOR_LIGHT:
 			checkConfigureTimeForLight();
+			updateTimeForRTC();
 			break;
-		case SignaLType::WEB_SET_ALLTIME_DATA_REQUEST:
+		case SignalType::WEB_SET_ALLTIME_DATA_REQUEST:
 			requestSetTimeAllData(data);
 			break;
-		case SignaLType::WEB_GET_LIGHT1_DATA_REQUEST:
-		case SignaLType::WEB_GET_LIGHT2_DATA_REQUEST:
-		case SignaLType::WEB_GET_LIGHT3_DATA_REQUEST:
-		case SignaLType::WEB_GET_LIGHT4_DATA_REQUEST:
+		case SignalType::WEB_GET_LIGHT1_DATA_REQUEST:
+		case SignalType::WEB_GET_LIGHT2_DATA_REQUEST:
+		case SignalType::WEB_GET_LIGHT3_DATA_REQUEST:
+		case SignalType::WEB_GET_LIGHT4_DATA_REQUEST:
 			sendLightDataToWeb(signal);
 			break;
-		case SignaLType::WEB_SET_LIGHT1_DATA_REQUEST:
-		case SignaLType::WEB_SET_LIGHT2_DATA_REQUEST:
-		case SignaLType::WEB_SET_LIGHT3_DATA_REQUEST:
-		case SignaLType::WEB_SET_LIGHT4_DATA_REQUEST:
+		case SignalType::WEB_SET_LIGHT1_DATA_REQUEST:
+		case SignalType::WEB_SET_LIGHT2_DATA_REQUEST:
+		case SignalType::WEB_SET_LIGHT3_DATA_REQUEST:
+		case SignalType::WEB_SET_LIGHT4_DATA_REQUEST:
 			requestSetLightData(data, signal);
 			break;
-		case SignaLType::REMOTE_LIGHT_SEND_TIME_DATE_FROM_NTP:
+		case SignalType::REMOTE_LIGHT_SEND_TIME_DATE_FROM_NTP:
 			receiveTimeDateFromNTP(data);
 			break;
-		case SignaLType::RTC_ADJUST_TIME:
-			adjustTime();
+		case SignalType::RTC_GET_ALL_ALL:
+		{
+			mAllTimeData = getTimeData();
+			mPreDate = mAllTimeData.date;
 			break;
+		}
+		case SignalType::RTC_SET_FLAG_UPDATE_TIME_WITH_NTP_SUCCESS:
+		{
+			mFlagUpdateTIme = 0U;
+			break;
+		}
+		case SignalType::RTC_SET_FLAG_UPDATE_TIME_WITH_NTP_FAILED:
+		{
+			mFlagUpdateTIme = 3U;
+			mCounterUpdateTime = 0U;
+			break;
+		}
+		case SignalType::RTC_COUNTER_INSTALL_IRBUTTON:
+		{
+			mCounterInstallIRButton = 1;
+			break;
+		}
+		case SignalType::REMOTE_LIGHT_PRESS_BUTTON_REACHED_MAX_TIME:
+		{
+			if(mCounterInstallIRButton < 16)
+			{
+				mCounterInstallIRButton = 0;
+				mRML->handleSignal(SignalType::REMOTE_LIGHT_START_IRBUTTON_INSTALLATION);
+			}
+			break;
+		}
 		default:
 			LOGW("Signal is not supported yet.");
 			break;
@@ -396,7 +422,7 @@ void RTC::getResponse(struct TimeOfLight *time, uint8_t REG)
 	}
 }
 
-void RTC::sendAllTimeData(const SignaLType signal)
+void RTC::sendAllTimeData(const SignalType signal)
 {
 	const int size = 7U;
 	int arr[size];
@@ -722,7 +748,7 @@ void RTC::sendTimeOfLight()
 	arr[7] = mTimeOfLight[LISTLIGHT[mIndexListLight]].second.second.minute;
 	arr[8] = mTimeOfLight[LISTLIGHT[mIndexListLight]].second.second.second;
 	Package data(arr, sizeof(arr) / sizeof(int));
-	mRML->handleSignal(SignaLType::LCD_MENU_MODE_OK, &data);
+	mRML->handleSignal(SignalType::LCD_MENU_MODE_OK, &data);
 }
 
 void RTC::sendAllTimeDataToWeb()
@@ -739,12 +765,21 @@ void RTC::sendAllTimeDataToWeb()
 
 	Package package(data, size);
 
-	mRML->handleSignal(SignaLType::WEB_GET_ALLTIME_DATA_RESPONSE, &package);
+	mRML->handleSignal(SignalType::WEB_GET_ALLTIME_DATA_RESPONSE, &package);
 }
 
 void RTC::checkConfigureTimeForLight()
 {
 	mAllTimeData = getTimeData();
+
+	if(mCounterInstallIRButton > 0 && mCounterInstallIRButton <= 15) {
+		mCounterInstallIRButton++;
+	}
+	if(mCounterInstallIRButton == 16) {
+		mRML->handleSignal(SignalType::RTC_COUNTER_INSTALL_IRBUTTON_REACHED);
+		mCounterInstallIRButton = 0;
+	}
+
 	std::map<String, LightMapValue>::iterator it;
 	for (it = mTimeOfLight.begin(); it != mTimeOfLight.end(); it++)
 	{
@@ -752,16 +787,16 @@ void RTC::checkConfigureTimeForLight()
 			it->second.first.second.minute == mAllTimeData.minute && it->second.first.second.second == mAllTimeData.second)
 		{
 			if(it->first == "Light1") {
-				mRML->handleSignal(SignaLType::RTC_TURN_ON_LIGHT1);
+				mRML->handleSignal(SignalType::RTC_TURN_ON_LIGHT1);
 			}
 			else if(it->first == "Light2") {
-				mRML->handleSignal(SignaLType::RTC_TURN_ON_LIGHT2);
+				mRML->handleSignal(SignalType::RTC_TURN_ON_LIGHT2);
 			}
 			else if(it->first == "Light3") {
-				mRML->handleSignal(SignaLType::RTC_TURN_ON_LIGHT3);
+				mRML->handleSignal(SignalType::RTC_TURN_ON_LIGHT3);
 			}
 			else if(it->first == "Light4") {
-				mRML->handleSignal(SignaLType::RTC_TURN_ON_LIGHT4);
+				mRML->handleSignal(SignalType::RTC_TURN_ON_LIGHT4);
 			}
 			else {
 				/*Do nothing*/
@@ -771,16 +806,16 @@ void RTC::checkConfigureTimeForLight()
 			it->second.second.second.minute == mAllTimeData.minute && it->second.second.second.second == mAllTimeData.second)
 		{
 			if(it->first == "Light1") {
-				mRML->handleSignal(SignaLType::RTC_TURN_OFF_LIGHT1);
+				mRML->handleSignal(SignalType::RTC_TURN_OFF_LIGHT1);
 			}
 			else if(it->first == "Light2") {
-				mRML->handleSignal(SignaLType::RTC_TURN_OFF_LIGHT2);
+				mRML->handleSignal(SignalType::RTC_TURN_OFF_LIGHT2);
 			}
 			else if(it->first == "Light3") {
-				mRML->handleSignal(SignaLType::RTC_TURN_OFF_LIGHT3);
+				mRML->handleSignal(SignalType::RTC_TURN_OFF_LIGHT3);
 			}
 			else if(it->first == "Light4") {
-				mRML->handleSignal(SignaLType::RTC_TURN_OFF_LIGHT4);
+				mRML->handleSignal(SignalType::RTC_TURN_OFF_LIGHT4);
 			}
 			else {
 				/*Do nothing*/
@@ -806,7 +841,7 @@ void RTC::requestSetTimeAllData(Package *data)
 		int result = false;
 		result = setTimeData(data);
 		if(result) {
-			mRML->handleSignal(SignaLType::WEB_SET_ALLTIME_DATA_RESPONSE);
+			mRML->handleSignal(SignalType::WEB_SET_ALLTIME_DATA_RESPONSE);
 		}
 		else {
 			LOGE("setTimeData ALLTIME DATA is incomplete!!!");
@@ -817,7 +852,7 @@ void RTC::requestSetTimeAllData(Package *data)
 	}
 }
 
-void RTC::sendLightDataToWeb(const SignaLType signal)
+void RTC::sendLightDataToWeb(const SignalType signal)
 {
 	const int size = 8U;
 	int order = mLightGetRequestResponse[signal].first;
@@ -835,7 +870,7 @@ void RTC::sendLightDataToWeb(const SignaLType signal)
 	mRML->handleSignal(mLightGetRequestResponse[signal].second, &package);
 }
 
-void RTC::requestSetLightData(Package *data, const SignaLType signal)
+void RTC::requestSetLightData(Package *data, const SignalType signal)
 {
 	if(data->getSize() == 9U) {
 		int *parseData  = data->getPackage();
@@ -895,5 +930,21 @@ void RTC::receiveTimeDateFromNTP(Package *data)
 void RTC::adjustTime() {
 	mAllTimeData.second = mAllTimeData.second + 7;
 	setTimeData(mAllTimeData);
-	mRML->handleSignal(SignaLType::REMOTE_LIGHT_DONE_ADJUST_TIME);
+}
+
+void RTC::updateTimeForRTC() {
+	if(mPreDate != mAllTimeData.date)
+	{
+		mPreDate = mAllTimeData.date;
+		if(mFlagUpdateTIme == 0U) {
+			mRML->handleSignal(SignalType::REMOTE_LIGHT_GET_TIME_DATE_FROM_NTP);
+		}
+		else if(mFlagUpdateTIme == mCounterUpdateTime) {
+			adjustTime();
+			mCounterUpdateTime = 0;
+		}
+		else {
+			mCounterUpdateTime++;
+		}
+	}
 }

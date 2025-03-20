@@ -5,6 +5,7 @@
 #include <Wire.h>
 #include <Arduino.h>
 #include <vector>
+#include <memory>
 #include "./../Utils/Logging.h"
 #include "./../Utils/SignalType.h"
 #include "./../Utils/Package.h"
@@ -29,6 +30,19 @@ protected:
   int *parseCommandStringToArray(String str, int &size);
 
   const uint8_t INVALID = 0x80;
+
+  const int SD_CS     = 5U;
+  const int SPI_MOSI  = 23U;
+  const int SPI_MISO  = 19U;
+  const int SPI_SCK   = 18U;
+
+  const int SCL     = 22U;
+  const int SDA     = 21U;
+
+  const uint8_t pinButton_1 = 12U;
+  const uint8_t pinButton_2 = 14U;
+  const uint8_t pinButton_3 = 27U;
+
 };
 
 #endif // HARDWARE_H

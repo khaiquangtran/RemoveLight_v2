@@ -13,7 +13,7 @@ class RemoteLight;
 class RTC : public Hardware
 {
 public:
-	RTC(RemoteLight *rml);
+	RTC(std::shared_ptr<RemoteLight> rml);
 	~RTC();
 	RTC(const RTC &) = delete;
 	RTC &operator=(const RTC &) = delete;
@@ -21,7 +21,7 @@ public:
 	void handleSignal(const SignalType signal, Package *data = nullptr);
 
 private:
-	RemoteLight *mRML;
+	std::shared_ptr<RemoteLight> mRML;
 	bool checkAddress();
 	byte bcdToDec(byte val);
 	byte decToHex(byte val);
@@ -49,7 +49,7 @@ private:
 	void adjustTime();
 	void updateTimeForRTC();
 
-	uint8_t mDS1307Addr;
+	uint8_t mRTCAddr;
 	std::map<String, LightMapValue> mTimeOfLight;
 	const uint8_t DS1307_ADDR = 0x68;
 	struct TimeDS1307 mAllTimeData;

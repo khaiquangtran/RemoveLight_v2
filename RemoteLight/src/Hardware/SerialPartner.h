@@ -10,7 +10,7 @@ class RemoteLight;
 class SerialPartner : public Hardware
 {
 public:
-    SerialPartner(RemoteLight *rml);
+    SerialPartner(std::shared_ptr<RemoteLight> rml);
     ~SerialPartner();
     SerialPartner(const SerialPartner &) = delete;
     SerialPartner &operator=(const SerialPartner &) = delete;
@@ -20,14 +20,8 @@ public:
     void listenning() override;
 
 private:
-    RemoteLight *mRML;
-    const int TXD2 = 17;
-    const int RXD2 = 16;
+    std::shared_ptr<RemoteLight> mRML;
     const int BAUD_RATE = 115200;
-
-    void handleMessage(String receiverData);
-
-    std::map<SignalType, String> mCommandHandle;
 };
 
 #endif // SERIAL_PARTNER_H

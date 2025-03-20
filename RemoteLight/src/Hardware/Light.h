@@ -9,7 +9,7 @@ class RemoteLight;
 class Light : public Hardware
 {
 public:
-  Light(RemoteLight *rml);
+  Light(std::shared_ptr<RemoteLight> rml);
   ~Light();
   Light(const Light &) = delete;
   Light &operator=(const Light &) = delete;
@@ -20,7 +20,7 @@ private:
   void controlLight(uint8_t light, uint8_t state = 3);
   void sendLightStatusToWeb();
 
-  RemoteLight *mRML;
+  std::shared_ptr<RemoteLight> mRML;
   const uint8_t Light1 = 18U;
   const uint8_t Light2 = 19U;
   const uint8_t Light3 = 5U;

@@ -1,9 +1,24 @@
 #include "LCD16x2.h"
 
-LCD16x2::LCD16x2(RemoteLight *rml) : mRML(rml)
+LCD16x2::LCD16x2(std::shared_ptr<RemoteLight> rml) : mRML(rml)
 {
 	LOGI("Initialization LCD!");
 	mRetry = 0U;
+
+	mButtonStringMap = {
+		{1, "Button 1"},
+		{2, "Button 2"},
+		{3, "Button 3"},
+		{4, "Button 4"},
+		{5, "Button Up"},
+		{6, "Button Down"},
+		{7, "Button Right"},
+		{8, "Button Left"},
+		{9, "Button Ok"},
+		{10, "Button Menu"},
+		{11, "Button App"},
+		{12, "Button Back"},
+	};
 
 retry:
 	if (checkAddress())
@@ -162,6 +177,14 @@ void LCD16x2::handleSignal(const SignalType signal, Package *data)
 		case (SignalType::LCD_CONNECT_NTP_FAILED):
 			displayConnectNTPFailed();
 			break;
+		case (SignalType::LCD_INSTALL_BUTTON1):
+			mLCD->clear();
+			mLCD->setCursor(0, 0);
+			mLCD->print("BUTTON1");
+			break;
+		case (SignalType::REMOTE_LIGHT_IRBUTTON_INSTALL):
+			displayInstallButton(data);
+			break;
 		default:
 			LOGW("Signal is not supported yet.");
 			break;
@@ -220,6 +243,7 @@ void LCD16x2::displayTimeFromDS1307(struct TimeDS1307 data)
 
 void LCD16x2::displayStartSetupMode()
 {
+	LOGI(".");
 	mLCD->clear();
 	mLCD->backlight();
 	mLCD->setCursor(0, 0);
@@ -230,6 +254,7 @@ void LCD16x2::displayStartSetupMode()
 
 void LCD16x2::displayEndSetupMode()
 {
+	LOGI(".");
 	mLCD->clear();
 	mLCD->backlight();
 	mLCD->setCursor(0, 0);
@@ -240,6 +265,7 @@ void LCD16x2::displayEndSetupMode()
 
 void LCD16x2::displayMenuMode(uint8_t light)
 {
+	LOGI(".");
 	mLCD->setCursor(0, 0);
 	mLCD->print("CHON DEN CAI DAT:");
 	mLCD->setCursor(0, 1);
@@ -264,6 +290,7 @@ void LCD16x2::displayMenuMode(uint8_t light)
 
 void LCD16x2::displaySelectedMenuMode(int *data)
 {
+	LOGI(".");
 	int flagChooseLight = *data++;
 	mLCD->setCursor(0, 0);
 	mLCD->print("ON ");
@@ -317,6 +344,7 @@ void LCD16x2::displaySelectedMenuMode(int *data)
 
 void LCD16x2::displayStartConnectWifi()
 {
+	LOGI("Connecting Wifi");
 	mLCD->setCursor(0,0);
 	mLCD->print("Connecting Wifi  ");
 	mLCD->setCursor(0,1);
@@ -324,6 +352,7 @@ void LCD16x2::displayStartConnectWifi()
 
 void LCD16x2::displayStartConnectFirebase()
 {
+	LOGI("Connecting FB");
 	mLCD->setCursor(0,0);
 	mLCD->print("Connecting FB    ");
 	mLCD->setCursor(0,1);
@@ -331,6 +360,7 @@ void LCD16x2::displayStartConnectFirebase()
 
 void LCD16x2::displayStartConnectNTP()
 {
+	LOGI("Connecting NTP");
 	mLCD->setCursor(0,0);
 	mLCD->print("Connecting NTP  ");
 	mLCD->setCursor(0,1);
@@ -338,11 +368,13 @@ void LCD16x2::displayStartConnectNTP()
 
 void LCD16x2::displayConnectingWifi()
 {
+	LOGI(".");
 	mLCD->print(".");
 }
 
 void LCD16x2::displayConnectWifiSuccess()
 {
+	LOGI("Connect Wifi Success");
 	mLCD->clear();
 	mLCD->setCursor(0,0);
 	mLCD->print("Connect Wifi  ");
@@ -352,6 +384,7 @@ void LCD16x2::displayConnectWifiSuccess()
 
 void LCD16x2::displayConnectWifiFailed()
 {
+	LOGI("Connect Wifi Failed");
 	mLCD->clear();
 	mLCD->setCursor(0,0);
 	mLCD->print("Connect Wifi  ");
@@ -361,6 +394,7 @@ void LCD16x2::displayConnectWifiFailed()
 
 void LCD16x2::displayConnectFirebaseSuccess()
 {
+	LOGI("Connect FB Success");
 	mLCD->clear();
 	mLCD->setCursor(0,0);
 	mLCD->print("Connect FB    ");
@@ -370,6 +404,7 @@ void LCD16x2::displayConnectFirebaseSuccess()
 
 void LCD16x2::displayConnectNTPSuccess()
 {
+	LOGI("Connect NTP Success");
 	mLCD->clear();
 	mLCD->setCursor(0,0);
 	mLCD->print("Connect NTP   ");
@@ -379,6 +414,7 @@ void LCD16x2::displayConnectNTPSuccess()
 
 void LCD16x2::displayConnectFBFailed()
 {
+	LOGI("Connect FB Failed");
 	mLCD->clear();
 	mLCD->setCursor(0,0);
 	mLCD->print("Connect FB    ");
@@ -388,9 +424,45 @@ void LCD16x2::displayConnectFBFailed()
 
 void LCD16x2::displayConnectNTPFailed()
 {
+	LOGI("Connect NTP Failed");
 	mLCD->clear();
 	mLCD->setCursor(0,0);
 	mLCD->print("Connect NTP   ");
 	mLCD->setCursor(0,1);
 	mLCD->print("Failed");
+}
+
+void LCD16x2::displayInstallButton(Package *data)
+{
+	if(data->getSize() == 3)
+	{
+		int *parseData = data->getPackage();
+		String str;
+		if(mButtonStringMap.find(parseData[0]) != mButtonStringMap.end()) {
+			str = mButtonStringMap.at(parseData[0]);
+		}
+		int total =  (parseData[1] << 16) | parseData[2];
+		LOGD("Total: %x", total);
+		mLCD->clear();
+		mLCD->setCursor(0,0);
+		mLCD->print(str);
+		mLCD->setCursor(0,1);
+		mLCD->print("0x");
+		mLCD->print(total, HEX);
+	}
+	else if(data->getSize() == 1) {
+		int *parseData = data->getPackage();
+		String str;
+		if(mButtonStringMap.find(parseData[0]) != mButtonStringMap.end()) {
+			str = mButtonStringMap.at(parseData[0]);
+		}
+		mLCD->clear();
+		mLCD->setCursor(0,0);
+		mLCD->print(str);
+		mLCD->setCursor(0,1);
+		mLCD->print("DONE");
+	}
+	else {
+		// Do nothing
+	}
 }

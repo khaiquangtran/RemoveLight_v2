@@ -1,6 +1,6 @@
 #include "./Button.h"
 
-Button::Button(RemoteLight *rml) : mRML(rml)
+Button::Button(std::shared_ptr<RemoteLight> rml) : mRML(rml)
 {
   LOGI("Initialization Button!");
   addButton(pinButton_1, SignalType::PRESS_BTN_1_SIGNAL);

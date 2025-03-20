@@ -1,10 +1,10 @@
 #include "RemoteLight.h"
 
-RemoteLight *rml;
+std::shared_ptr<RemoteLight>rml;
 
 void setup() {
 
-  rml = new RemoteLight();
+  rml = std::make_shared<RemoteLight>();
   rml->init();
 }
 

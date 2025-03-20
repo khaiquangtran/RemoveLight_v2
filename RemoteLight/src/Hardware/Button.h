@@ -11,7 +11,7 @@ class RemoteLight;
 class Button : public Hardware
 {
 public:
-  Button(RemoteLight *rml);
+  Button(std::shared_ptr<RemoteLight> rml);
   ~Button();
   Button(const Button &) = delete;
   Button &operator=(const Button &) = delete;
@@ -24,12 +24,10 @@ private:
   void addButton(uint8_t pin, SignalType signal);
 
 private:
-  RemoteLight *mRML;
+  std::shared_ptr<RemoteLight> mRML;
   std::map<uint8_t, std::pair<std::pair<UL, stateButton>, SignalType>> mListButton;
   const UL DEPAY = 50U;
-  const uint8_t pinButton_1 = 12U;
-  const uint8_t pinButton_2 = 14U;
-  const uint8_t pinButton_3 = 27U;
+
 };
 
 #endif // BUTTON_H

@@ -1,6 +1,6 @@
 #include "./Light.h"
 
-Light::Light(RemoteLight *rml) : mRML(rml)
+Light::Light(std::shared_ptr<RemoteLight> rml) : mRML(rml)
 {
 	mListLight[Light1] = HIGH;
 	mListLight[Light2] = HIGH;

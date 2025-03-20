@@ -12,7 +12,11 @@
 #include "./Hardware/Light.h"
 #include "./Hardware/SerialPartner.h"
 #include "./Timer/TimerMgr.h"
-class RemoteLight
+#include "./Tasks/Tasks.h"
+#include "./Network/Network.h"
+
+class Tasks;
+class RemoteLight : public std::enable_shared_from_this<RemoteLight>
 {
 public:
 	RemoteLight();
@@ -24,6 +28,12 @@ public:
 	void handleSignal(const SignalType signal, Package *data = nullptr);
 
 	void onTimeout(const SignalType signal = SignalType::NONE);
+
+	std::shared_ptr<TimerManager> mTimerMgr;
+	std::shared_ptr<Timer> mTimerConnectWifi;
+	std::shared_ptr<Timer> mTimerDisplayAll;
+	std::shared_ptr<Timer> mTimerDisplaySetupMode;
+	std::shared_ptr<Timer> mTimerCheckConfiguredTimeForLight;
 
 private:
 	enum class CONTROL_MODE : uint8_t
@@ -37,14 +47,9 @@ private:
 		MENU_MODE,
 		INTO_MENU_MODE,
 		CHECK_CONNECT_WIFI,
-	};
-
-	enum STATE_CONNECT : uint8_t
-	{
-		NOK = 0U,
-		WIFI,
-		FIREBASE,
-		NTP,
+		CHECK_CONNECT_FIREBASE,
+		CHECK_CONNECT_NTP,
+		INSTALL_IR_BUTTON,
 	};
 
 	std::shared_ptr<Hardware> mSerial;
@@ -53,50 +58,35 @@ private:
 	std::shared_ptr<Hardware> mLCD;
 	std::shared_ptr<Hardware> mBTN;
 	std::shared_ptr<Hardware> mLIGHT;
-	std::shared_ptr<TimerManager> mTimerMgr;
-
-	std::shared_ptr<Timer> mTimerConnectWifi;
-	std::shared_ptr<Timer> mTimerDisplayAll;
-	std::shared_ptr<Timer> mTimerDisplaySetupMode;
-	std::shared_ptr<Timer> mTimerCheckConfiguredTimeForLight;
+	std::shared_ptr<Network> mNetwork;
+	std::shared_ptr<Tasks> mTasks;
 
 	const uint16_t DELAY_1S  	= 1000U;
 	const uint16_t DELAY_3S  	= DELAY_1S * 3;
 	const uint16_t DELAY_5S  	= DELAY_1S * 5;
 	const uint32_t DELAY_1D  	= 86400000U;
 	const uint32_t DELAY_3D  	= DELAY_1D * 3;
-	const uint8_t REPEATS_30  	= 30U;
-	const uint8_t REPEATS_10  	= 10U;
 
-	uint8_t mCounterConnectWifi;
-	uint8_t mCounterDisplayAllTime;
 	bool mCheckConfiguredTimeForLight;
 
 	std::mutex mMutex;
-	std::mutex mMutex2;
 
 	int8_t mFlagConnectNTP;
 	int8_t mFlagUpdateRTC;
 
-	STATE_CONNECT mStateConnect;
 	CONTROL_MODE mControlMode;
 
-	uint8_t mFlagInstallIRButton;
+	std::map<CONTROL_MODE, std::pair<SignalType, String>> mControlModeSignalMap;
 
-	void connectWifiMode();
-	void displayAllTime();
-	void displayReadySetupMode();
-	void intoSetupMode();
-	void displayEndSetupMode();
+	SignalType mFlagTimeout;
 
-	void setControlMode(const CONTROL_MODE state);
-	CONTROL_MODE getControlMode();
-
-	void setStateConnect(const STATE_CONNECT state);
-	STATE_CONNECT getStateConnect();
+	void handleControlMode();
+	void handleTimeout();
 
 	void setCheckConfiguredTimeForLight(const bool state);
 	bool getCheckConfiguredTimeForLight();
+	void setControlMode(const CONTROL_MODE state);
+	CONTROL_MODE getControlMode();
 };
 
 #endif // ! REMOTE_LIGHT_H

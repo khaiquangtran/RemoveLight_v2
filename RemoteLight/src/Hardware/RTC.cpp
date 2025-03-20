@@ -1,6 +1,6 @@
 #include "RTC.h"
 
-RTC::RTC(RemoteLight *rml) : mRML(rml), mDS1307Addr(0U), mIndexOfAllTimeData(0U), mIndexLight(0U),
+RTC::RTC(std::shared_ptr<RemoteLight> rml) : mRML(rml), mRTCAddr(0U), mIndexOfAllTimeData(0U), mIndexLight(0U),
 								mIndexListLight(0U), mCountRetry(0U), mFlagUpdateTIme(0U), mPreDate(0U),
 								mCounterUpdateTime(0U), mCounterInstallIRButton(0U)
 {
@@ -88,7 +88,6 @@ void RTC::handleSignal(const SignalType signal, Package *data)
 			break;
 		case SignalType::RTC_SETUP_MODE_OK:
 			setTimeData(mAllTimeData);
-			mRML->handleSignal(SignalType::REMOTE_LIGHT_END_SETUP_MODE);
 			break;
 		case SignalType::RTC_MOVE_LEFT_MENU_MODE:
 		{
@@ -178,7 +177,7 @@ void RTC::handleSignal(const SignalType signal, Package *data)
 		case SignalType::WEB_SET_LIGHT4_DATA_REQUEST:
 			requestSetLightData(data, signal);
 			break;
-		case SignalType::REMOTE_LIGHT_SEND_TIME_DATE_FROM_NTP:
+		case SignalType::NETWORK_SEND_TIME_DATE_FROM_NTP:
 			receiveTimeDateFromNTP(data);
 			break;
 		case SignalType::RTC_GET_ALL_ALL:
@@ -205,11 +204,7 @@ void RTC::handleSignal(const SignalType signal, Package *data)
 		}
 		case SignalType::REMOTE_LIGHT_PRESS_BUTTON_REACHED_MAX_TIME:
 		{
-			if(mCounterInstallIRButton < 16)
-			{
-				mCounterInstallIRButton = 0;
-				mRML->handleSignal(SignalType::REMOTE_LIGHT_START_IRBUTTON_INSTALLATION);
-			}
+			mCounterInstallIRButton = 0;
 			break;
 		}
 		default:
@@ -226,7 +221,7 @@ bool RTC::checkAddress()
 		return false;
 	}
 	else {
-		mDS1307Addr = DS1307_ADDR;
+		mRTCAddr = DS1307_ADDR;
 		LOGI("Find out DS1307");
 		return true;
 	}
@@ -246,14 +241,14 @@ struct TimeDS1307 RTC::getTimeData()
 {
 	struct TimeDS1307 data{
 		0U, 0U, 0U, 0U, 0U, 0U, 0U};
-	if (mDS1307Addr == 0) {
+	if (mRTCAddr == 0) {
 		return data;
 	}
 	else {
-		Wire.beginTransmission(mDS1307Addr);
+		Wire.beginTransmission(mRTCAddr);
 		Wire.write(0x00);
 		Wire.endTransmission();
-		if (Wire.requestFrom(mDS1307Addr, 7U) == 7U) {
+		if (Wire.requestFrom(mRTCAddr, 7U) == 7U) {
 			data.second = bcdToDec(Wire.read() & 0x7f);
 			data.minute = bcdToDec(Wire.read());
 			data.hour = bcdToDec(Wire.read() & 0x3f);
@@ -275,14 +270,14 @@ struct TimeOfLight RTC::getTimeOfLight(uint8_t reg)
 {
 	struct TimeOfLight data{
 		0U, 0U, 0U, 0U};
-	if (mDS1307Addr == 0) {
+	if (mRTCAddr == 0) {
 		return data;
 	}
 	else {
-		Wire.beginTransmission(mDS1307Addr);
+		Wire.beginTransmission(mRTCAddr);
 		Wire.write(reg);
 		Wire.endTransmission();
-		if (Wire.requestFrom(mDS1307Addr, 4U) == 4U) {
+		if (Wire.requestFrom(mRTCAddr, 4U) == 4U) {
 			data.sw = bcdToDec(Wire.read() & 0x7f);
 			data.hour = bcdToDec(Wire.read());
 			data.minute = bcdToDec(Wire.read() & 0x3f);
@@ -300,11 +295,11 @@ struct TimeOfLight RTC::getTimeOfLight(uint8_t reg)
 bool RTC::writeData(uint8_t reg, uint8_t data)
 {
 	bool result = false;
-	if (mDS1307Addr == 0) {
+	if (mRTCAddr == 0) {
 		LOGE("Address ds1307 is invalid!!!");
 	}
 	else {
-		Wire.beginTransmission(mDS1307Addr);
+		Wire.beginTransmission(mRTCAddr);
 		Wire.write(reg);
 		Wire.write(data);
 		if (Wire.endTransmission() == 0) {
@@ -404,10 +399,10 @@ struct TimeOfLight RTC::getTimeLight(String light, uint8_t reg)
 
 void RTC::getResponse(struct TimeOfLight *time, uint8_t REG)
 {
-	Wire.beginTransmission(mDS1307Addr);
+	Wire.beginTransmission(mRTCAddr);
 	Wire.write(REG);
 	Wire.endTransmission();
-	if (Wire.requestFrom(mDS1307Addr, 4U) == 4U) {
+	if (Wire.requestFrom(mRTCAddr, 4U) == 4U) {
 		time->sw = bcdToDec(Wire.read());
 		delay(10);
 		time->hour = bcdToDec(Wire.read());
@@ -937,7 +932,7 @@ void RTC::updateTimeForRTC() {
 	{
 		mPreDate = mAllTimeData.date;
 		if(mFlagUpdateTIme == 0U) {
-			mRML->handleSignal(SignalType::REMOTE_LIGHT_GET_TIME_DATE_FROM_NTP);
+			mRML->handleSignal(SignalType::NETWORK_GET_TIME_DATE_FROM_NTP);
 		}
 		else if(mFlagUpdateTIme == mCounterUpdateTime) {
 			adjustTime();

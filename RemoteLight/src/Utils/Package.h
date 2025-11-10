@@ -1,35 +1,29 @@
 #ifndef PACKAGE_H
 #define PACKAGE_H
-
+#include <vector>
 class Package
 {
 public:
-  Package(int data[], int size)
+  Package(const Package&) = default;
+  Package(Package&&) noexcept = default;
+  Package& operator=(const Package&) = default;
+  Package& operator=(Package&&) noexcept = default;
+
+  explicit Package(const std::string &str)
   {
-    mData = new int[size];
-    mSize = size;
-    for (int i = 0; i < size; i++)
-      mData[i] = data[i];
+    mData.assign(str.begin(), str.end());
   }
 
-  ~Package()
+  explicit Package(const std::vector<int32_t> &data) : mData(data)
   {
-    delete[] mData;
   }
 
-  int *getPackage()
-  {
-    return mData;
-  }
-
-  int getSize()
-  {
-    return mSize;
-  }
+  const int32_t* getPackage() const { return mData.data(); }
+  int32_t getSize() const { return static_cast<int32_t>(mData.size()); }
 
 private:
-  int *mData;
-  int mSize;
+  std::vector<int32_t> mData;
 };
+
 
 #endif // PACKAGE_H

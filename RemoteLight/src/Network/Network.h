@@ -8,6 +8,7 @@
 #include <Firebase_ESP_Client.h>
 // #include "addons/TokenHelper.h"
 // #include "addons/RTDBHelper.h"
+#include "BluetoothSerial.h"
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 #include <array>
@@ -24,6 +25,7 @@ public:
     Network &operator=(const Network &) = delete;
 
     void handleSignal(const SignalType signal, Package *data = nullptr);
+    void listenBluetoothData();
 
 private:
     std::shared_ptr<RemoteLight>mRML;
@@ -35,16 +37,22 @@ private:
     const uint32_t GMT = 25200; // GMT +7
     WiFiUDP ntpUDP;
     NTPClient *mTimeClient;
+    BluetoothSerial mSerialBT;
+    bool mIsConnectedBT;
+    bool mPermissionToConnectBT;
+    bool mIsConnectedWifi;
 
     void signUp();
     void connectWifi();
     void checkConnectNTP();
     void checkCommandFirebase();
     void sendAllTimeDatatoWeb(Package *data);
-    void sendLightDataToWeb(Package *data, int lightIndex);
+    void sendLightDataToWeb(Package *data, int32_t lightIndex);
     void sendLightStatusToWeb(Package *data);
     void sendResponseSetLightDatatoWeb();
     void getTimeDataFromNtp();
+    void setCommandIsIdle();
+    void processComboBtnPress();
 
     int8_t mCommandAllTimerFlag;
 
@@ -61,7 +69,7 @@ private:
         "/data/light1", "/data/light2", "/data/light3", "/data/light4",
     };
 
-    enum REQUEST_FB : int
+    enum REQUEST_FB : int32_t
     {
         SENT_INFORM = 0,
         IDLE,
@@ -80,9 +88,10 @@ private:
         SETTING_LIGHT2_STATUS,
         SETTING_LIGHT3_STATUS,
         SETTING_LIGHT4_STATUS,
+        REQUEST_END,
     };
-    std::map<REQUEST_FB, std::pair<SignalType, int>> mRequestSignalMap;
-    std::map<SignalType, int> mSignalLightMap;
+    std::map<REQUEST_FB, std::pair<SignalType, int32_t>> mRequestSignalMap;
+    std::map<SignalType, int32_t> mSignalLightMap;
 };
 
 #endif // WIFIPARTNER_H

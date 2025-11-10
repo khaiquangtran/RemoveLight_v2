@@ -1,12 +1,10 @@
 #include "IRRemotePartner.h"
+#include "EEPROMPartner.h"
 #include <IRremote.hpp>
-#include <EEPROM.h>
 
 IRRemotePartner::IRRemotePartner(std::shared_ptr<RemoteLight> rml) : mRML(rml), mFlagInstallButton(0U), mValueButton(0), mNumberButton(0)
 {
-  LOGI("Initialization IRRemotePartner!");
   IrReceiver.begin(pinIR, ENABLE_LED_FEEDBACK);
-  EEPROM.begin(EEPROM_SIZE);
 
   mButtonSignal = {
     SignalType::IR_BTN_1_SIGNAL,
@@ -20,26 +18,23 @@ IRRemotePartner::IRRemotePartner(std::shared_ptr<RemoteLight> rml) : mRML(rml), 
     SignalType::IR_BTN_OK_SIGNAL,
     SignalType::IR_BTN_MENU_SIGNAL,
     SignalType::IR_BTN_APP_SIGNAL,
-    SignalType::IR_BTN_BACK_SIGNAL
+    SignalType::IR_BTN_BACK_SIGNAL,
+    SignalType::IR_BTN_5_SIGNAL,
+    SignalType::IR_BTN_6_SIGNAL,
+    SignalType::IR_BTN_7_SIGNAL,
   };
 
-  for(int i = 0; i < EEPROM_SIZE; i++)
-  {
-    int32_t data = 0;
-    data = data | (EEPROM.read(i++) << 24U);
-    data = data | (EEPROM.read(i++) << 16U);
-    data = data | (EEPROM.read(i++) << 8U);
-    data = data | (EEPROM.read(i));
-    mButtonSignalMap[data] = mButtonSignal[i/4];
-    LOGD("data: %x, order: %d", data, i/4);
-  }
+  NUMBER_BUTTONS = mButtonSignal.size();
+
+  LOGI(" =========== IRRemotePartner =========== ");
 }
 
 IRRemotePartner::~IRRemotePartner()
 {
+
 }
 
-void IRRemotePartner::handleSignal(const SignalType signal, Package *data)
+void IRRemotePartner::handleSignal(const SignalType& signal,const Package* data)
 {
   switch (signal)
   {
@@ -49,32 +44,28 @@ void IRRemotePartner::handleSignal(const SignalType signal, Package *data)
     break;
   }
   case SignalType::IR_INSTALL_BUTTON_DONE: {
-    if(mNumberButton <= 12)
+    if(mNumberButton <= NUMBER_BUTTONS)
     {
       LOGI("Update Button map");
       if(mButtonSignalMap.find(mValueButton) != mButtonSignalMap.end()) {
         mButtonSignalMap.erase(mValueButton);
       }
       mButtonSignalMap[mValueButton] = mButtonSignal[mNumberButton - 1];
-      EEPROM.write(mNumberButton * 4 - 4, ((mValueButton & 0xFF000000) >> 24));
-      EEPROM.write(mNumberButton * 4 - 3, ((mValueButton & 0x00FF0000) >> 16));
-      EEPROM.write(mNumberButton * 4 - 2, ((mValueButton & 0x0000FF00) >> 8));
-      EEPROM.write(mNumberButton * 4 - 1,  (mValueButton & 0x000000FF));
-      EEPROM.commit();
 
-      const int size = 1;
-      int data[size] = {mNumberButton};
-      Package *pack = new Package(data, size);
-      mRML->handleSignal(SignalType::REMOTE_LIGHT_IRBUTTON_INSTALL, pack);
-      delete pack;
+      std::vector<int32_t> vecData = {mNumberButton, mValueButton};
+      std::unique_ptr<Package> packData = std::make_unique<Package>(vecData);
+      mRML->handleSignal(SignalType::REMOTE_LIGHT_IRBUTTON_INSTALL, packData.get());
       mNumberButton++;
     }
     else {
       mFlagInstallButton = 0;
       mNumberButton = 0;
-      mRML->handleSignal(SignalType::IR_INSTALL_BUTTON_COMPLETE);
+      // mRML->handleSignal(SignalType::IR_INSTALL_BUTTON_COMPLETE);
     }
     break;
+  }
+  case (SignalType::IR_ERRPROM_SEND_DATA): {
+    parseDataFromEEPROM(data);
   }
   default:
     break;
@@ -105,14 +96,12 @@ void IRRemotePartner::listenning()
         }
         else if(mFlagInstallButton == 1) {
           mValueButton = valueIR;
-          const int size = 3;
-          int data[size] = {0, 0, 0};
-          data[0] = mNumberButton;
-          data[1] = (mValueButton & 0xFFFF0000) >> 16;
-          data[2] = (mValueButton & 0xFFFF);
-          Package *pack = new Package(data, size);
-          mRML->handleSignal(SignalType::REMOTE_LIGHT_IRBUTTON_INSTALL, pack);
-          delete pack;
+          std::vector<int32_t> vecData(3, 0);
+          vecData.push_back(mNumberButton);
+          vecData.push_back((mValueButton & 0xFFFF0000) >> 16);
+          vecData.push_back((mValueButton & 0xFFFF));
+          std::unique_ptr<Package> packData = std::make_unique<Package>(vecData);
+          mRML->handleSignal(SignalType::REMOTE_LIGHT_IRBUTTON_INSTALL, packData.get());
         }
         else {
 
@@ -120,4 +109,26 @@ void IRRemotePartner::listenning()
       }
     }
   }
+}
+
+void IRRemotePartner::parseDataFromEEPROM(const Package* data) {
+	if(data == nullptr) {
+		LOGE("Data from EEPROM is null.");
+		return;
+	}
+	else {
+    const int32_t size = data->getSize();
+    const int32_t* value = data->getPackage();
+		if(size != NUMBER_BUTTONS) {
+			LOGE("Data from EEPROM with length is not %.", NUMBER_BUTTONS);
+			return;
+		}
+		else {
+			for(int32_t i = 0; i < size; i++)
+      {
+        mButtonSignalMap[value[i]] = mButtonSignal[i];
+        LOGD("data: %x, order: %d", value[i], i);
+      }
+		}
+	}
 }

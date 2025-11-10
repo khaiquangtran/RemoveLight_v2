@@ -16,12 +16,15 @@ public:
 
   void listenning();
 
-  void handleSignal(const SignalType signal, Package *data = nullptr);
+  void handleSignal(const SignalType& signal,const Package* data = nullptr);
 
 private:
+  void parseDataFromEEPROM(const Package* data);
+
   std::shared_ptr<RemoteLight> mRML;
   const uint_fast8_t pinIR = 26U;
-  const int EEPROM_SIZE = 4*12;
+  const int32_t EEPROM_SIZE = 4*12;
+  int32_t NUMBER_BUTTONS;
 
   std::vector<SignalType> mButtonSignal;
   std::map<int32_t, SignalType> mButtonSignalMap;

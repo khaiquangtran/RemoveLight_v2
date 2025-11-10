@@ -17,8 +17,8 @@ public:
   Button &operator=(const Button &) = delete;
 
   void listenning() override;
-
-  void handleSignal(const SignalType signal, Package *data = nullptr);
+  void handleSignal(const SignalType& signal, const Package* data = nullptr);
+  void init();
 
 private:
   void addButton(uint8_t pin, SignalType signal);

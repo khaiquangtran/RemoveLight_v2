@@ -2,6 +2,7 @@
 #define RTCDEF_H
 
 #include <Arduino.h>
+#include "Hardware.h"
 
 enum REGISTER_ADDRESS : uint8_t
 {
@@ -18,7 +19,7 @@ namespace LIGHT1
 {
 	enum : uint8_t
 	{
-		ON_SWITCH = 0x08,
+		ON_SWITCH = 0x48U,
 		ON_HOUR,
 		ON_MINUTE,
 		ON_SECOND,
@@ -89,20 +90,11 @@ struct TimeDS1307
 	uint16_t year;
 };
 
-struct TimeOfLight
+struct LightOfTime
 {
 	uint8_t sw;
 	uint8_t hour;
 	uint8_t minute;
 	uint8_t second;
 };
-
-struct REG_TIME_LIGHT
-{
-	uint8_t SWITCH;
-	uint8_t HOUR;
-	uint8_t MINUTE;
-	uint8_t SECOND;
-};
-
 #endif // RTCDEF_H

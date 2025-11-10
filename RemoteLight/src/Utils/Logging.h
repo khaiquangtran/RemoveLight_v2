@@ -11,6 +11,6 @@
 #define LOGD(message, ...) printLog("DEBUG", __FILE__, __func__, __LINE__, message, ##__VA_ARGS__)
 #define LOGV(message, ...) printLog("VERBOSE", __FILE__, __func__, __LINE__, message, ##__VA_ARGS__)
 
-void printLog(const char* level, const char* path, const char* fileName, int line, const char* message, ...);
+void printLog(const char* level, const char* path, const char* fileName, int32_t line, const char* message, ...);
 
 #endif // LOGGING_H

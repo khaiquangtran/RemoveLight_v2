@@ -4,9 +4,16 @@ Tasks::Tasks(std::shared_ptr<RemoteLight> rml, std::shared_ptr<Hardware> lcd, st
     mRML(rml), mLCD(lcd), mNET(net), mRTC(rtc), mIR(ir)
 {
     mCounterConnectWifi = 0U;
-    mFlagInstallIRButton = 0;
+    mCounterDisplayAllTime = 0U;
     mFlagConnectFirebase = CONNECT_STATUS::UNKNOWN;
     mModeHandle = MODE_HANDLE::NONE;
+
+    mPrintListModeHandle = {
+        {MODE_HANDLE::NONE,                 "MODE_HANDLE::NONE"},
+        {MODE_HANDLE::INTO_SETUP_MODE,      "MODE_HANDLE::INTO_SETUP_MODE"},
+        {MODE_HANDLE::INTO_MENU_MODE,       "MODE_HANDLE::INTO_MENU_MODE"},
+        {MODE_HANDLE::MENU_MODE,            "MODE_HANDLE::MENU_MODE"},
+    };
 }
 
 void Tasks::handleSignal(const SignalType signal, Package *data)
@@ -17,13 +24,9 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
         break;
     }
     case (SignalType::TASKS_CONNECT_WIFI_SUCCESS): {
-        mRML->mTimerConnectWifi->stopTimer();
         mCounterConnectWifi = 0;
         LOGI("WIFI connection SUCCESS!");
-        mRML->handleSignal(SignalType::LCD_CONNECT_WIFI_SUCCESS);
-        mRML->mTimerConnectWifi->updateTimer(
-            [this]() { mRML->onTimeout(SignalType::TIMER_CONNECT_WIFI_SUCCESS_GOTO_NEXT_CONNECT); }, DELAY_5S);
-        mRML->mTimerConnectWifi->startTimer();
+        mLCD->handleSignal(SignalType::LCD_CONNECT_WIFI_SUCCESS);
         break;
     }
     case (SignalType::TASKS_CONNECT_WIFI_FAILED): {
@@ -38,11 +41,7 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
         mLCD->handleSignal(SignalType::LCD_CLEAR_SCREEN);
 		mLCD->handleSignal(SignalType::LCD_DISPLAY_START_CONNECT_FIREBASE);
         mRML->handleSignal(SignalType::REMOTE_LIGHT_CONNECT_FIREBASE);
-        break;
-    }
-    case (SignalType::TIMER_CONNECT_WIFI_FAILED_GOTO_NEXT_MODE): {
-        mLCD->handleSignal(SignalType::LCD_CLEAR_SCREEN);
-        mRML->handleSignal(SignalType::REMOTE_LIGHT_DISPLAY_ALLTIME);
+        mRML->handleSignal(SignalType::REMOTE_LIGHT_UPDATE_TIMER_CONNECT_FIREBASE);
         break;
     }
     case (SignalType::TASKS_CONNECT_FIREBASE): {
@@ -50,14 +49,10 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
         break;
     }
     case (SignalType::TASKS_CONNECT_FIREBASE_SUCCESS): {
-        mRML->mTimerConnectWifi->stopTimer();
         mCounterConnectWifi = 0;
         mFlagConnectFirebase = CONNECT_STATUS::SUCCESS;
         LOGI("FIREBASE connection SUCCESS!");
-        mRML->handleSignal(SignalType::LCD_CONNECT_FIREBASE_SUCCESS);
-        mRML->mTimerConnectWifi->updateTimer(
-            [this]() { mRML->onTimeout(SignalType::TIMER_CONNECT_FIREBASE_SUCCESS_GOTO_NEXT_CONNECT); }, DELAY_5S);
-        mRML->mTimerConnectWifi->startTimer();
+        mLCD->handleSignal(SignalType::LCD_CONNECT_FIREBASE_SUCCESS);
         break;
     }
     case (SignalType::TASKS_CONNECT_FIREBASE_FAILED): {
@@ -65,7 +60,7 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
         mFlagConnectFirebase = CONNECT_STATUS::FAILED;
         break;
     }
-    case (SignalType::TIMER_CONNECT_NTP_SIGNAL): {
+    case (SignalType::TIMER_CONNECT_FIREBASE_SIGNAL): {
         connectFirebaseTimeout();
         break;
     }
@@ -74,6 +69,7 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
         mLCD->handleSignal(SignalType::LCD_CLEAR_SCREEN);
 		mLCD->handleSignal(SignalType::LCD_DISPLAY_START_CONNECT_NTP);
         mRML->handleSignal(SignalType::REMOTE_LIGHT_CONNECT_NTP);
+        mRML->handleSignal(SignalType::REMOTE_LIGHT_UPDATE_TIMER_CONNECT_NTP);
         break;
     }
     case (SignalType::TASKS_CONNECT_NTP): {
@@ -81,26 +77,25 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
         break;
     }
     case (SignalType::TASKS_CONNECT_NTP_SUCCESS): {
-        mRML->mTimerConnectWifi->stopTimer();
         mCounterConnectWifi = 0;
         LOGI("NTP connection SUCCESS!");
+        // mRTC->handleSignal(SignalType::RTC_SET_FLAG_UPDATE_TIME_WITH_NTP_SUCCESS);
         mLCD->handleSignal(SignalType::LCD_CONNECT_NTP_SUCCESS);
         mNET->handleSignal(SignalType::NETWORK_GET_TIME_DATE_FROM_NTP);
-        mRML->mTimerConnectWifi->updateTimer(
-            [this]() { mRML->onTimeout(SignalType::TIMER_CONNECT_NTP_SUCCESS_GOTO_NEXT_CONNECT); }, DELAY_5S);
-        mRML->mTimerConnectWifi->startTimer();
         break;
     }
     case (SignalType::TASKS_CONNECT_NTP_FAILED): {
         LOGW("NTP connection FAILED!");
         break;
     }
-    case (SignalType::TASKS_CONNECT_NTP_TIMEOUT): {
+    case (SignalType::TIMER_CONNECT_NTP_SIGNAL): {
         connectNTPTimeout();
         break;
     }
+    case (SignalType::TIMER_CONNECT_WIFI_FAILED_GOTO_NEXT_MODE):
     case (SignalType::TIMER_CONNECT_NTP_SUCCESS_GOTO_NEXT_CONNECT):
-    case (SignalType::TIMER_CONNECT_NTP_FAILED_GOTO_NEXT_CONNECT): {
+    case (SignalType::TIMER_CONNECT_NTP_FAILED_GOTO_NEXT_CONNECT):
+    case (SignalType::TIMER_DISPLAY_ALL_END_SETUP_MODE_SIGNAL): {
         mLCD->handleSignal(SignalType::LCD_CLEAR_SCREEN);
         mRML->handleSignal(SignalType::REMOTE_LIGHT_DISPLAY_ALLTIME);
         break;
@@ -113,17 +108,18 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
         displayAllTimeTimeout();
         break;
     }
-    case (SignalType::TIMER_DISPLAY_ALL_END_SETUP_MODE_SIGNAL): {
-		mLCD->handleSignal(SignalType::LCD_CLEAR_SCREEN);
-        mRML->handleSignal(SignalType::REMOTE_LIGHT_DISPLAY_ALLTIME);
-        break;
-    }
     case (SignalType::IR_BTN_APP_SIGNAL): {
+        mRML->handleSignal(SignalType::REMOTE_LIGHT_STOP_TIMER_CHECK_CONFIGURED_TIMER_FOR_LIGHT);
         displayReadySetupMode();
         break;
     }
     case (SignalType::TASKS_START_SETUP_MODE): {
-        intoSetupMode();
+        if(mModeHandle == MODE_HANDLE::NONE) {
+            intoSetupMode();
+        }
+        else {
+            LOGW("Can't \'TASK DISPLAY ALL TIME\'. During %s!", mPrintListModeHandle.at(mModeHandle).c_str());
+        }
         break;
     }
     case (SignalType::TASKS_END_SETUP_MODE): {
@@ -132,77 +128,88 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
     }
     case (SignalType::IR_BTN_UP_SIGNAL): {
 		if (mModeHandle == MODE_HANDLE::INTO_SETUP_MODE) {
-			mRTC->handleSignal(SignalType::RTC_INCREASE_VALUE);
+			// mRTC->handleSignal(SignalType::RTC_INCREASE_VALUE);
 		}
 		else if (mModeHandle == MODE_HANDLE::INTO_MENU_MODE) {
-			mRTC->handleSignal(SignalType::RTC_INCREASE_VALUE_MENU_MODE);
+			// mRTC->handleSignal(SignalType::RTC_INCREASE_VALUE_MENU_MODE);
 		}
 		break;
 	}
     case (SignalType::IR_BTN_DOWN_SIGNAL): {
 		if (mModeHandle == MODE_HANDLE::INTO_SETUP_MODE) {
-			mRTC->handleSignal(SignalType::RTC_DECREASE_VALUE);
+			// mRTC->handleSignal(SignalType::RTC_DECREASE_VALUE);
 		}
 		else if (mModeHandle == MODE_HANDLE::INTO_MENU_MODE) {
-			mRTC->handleSignal(SignalType::RTC_DECREASE_VALUE_MENU_MODE);
+			// mRTC->handleSignal(SignalType::RTC_DECREASE_VALUE_MENU_MODE);
 		}
 		break;
 	}
     case (SignalType::IR_BTN_LEFT_SIGNAL): {
 		if (mModeHandle == MODE_HANDLE::INTO_SETUP_MODE) {
-			mRTC->handleSignal(SignalType::RTC_SHIFT_LEFT_VALUE);
+			// mRTC->handleSignal(SignalType::RTC_SHIFT_LEFT_VALUE);
 		}
 		else if (mModeHandle == MODE_HANDLE::MENU_MODE) {
-			mRTC->handleSignal(SignalType::RTC_MOVE_LEFT_MENU_MODE);
+			// mRTC->handleSignal(SignalType::RTC_MOVE_LEFT_MENU_MODE);
 		}
 		else if (mModeHandle == MODE_HANDLE::INTO_MENU_MODE) {
-			mRTC->handleSignal(SignalType::RTC_MOVE_LEFT_INTO_MENU_MODE);
+			// mRTC->handleSignal(SignalType::RTC_MOVE_LEFT_INTO_MENU_MODE);
 		}
 		break;
 	}
     case (SignalType::IR_BTN_RIGHT_SIGNAL): {
 		if (mModeHandle == MODE_HANDLE::INTO_SETUP_MODE) {
-			mRTC->handleSignal(SignalType::RTC_SHIFT_RIGHT_VALUE);
+			// mRTC->handleSignal(SignalType::RTC_SHIFT_RIGHT_VALUE);
 		}
 		else if (mModeHandle == MODE_HANDLE::MENU_MODE) {
-			mRTC->handleSignal(SignalType::RTC_MOVE_RIGHT_MENU_MODE);
+			// mRTC->handleSignal(SignalType::RTC_MOVE_RIGHT_MENU_MODE);
 		}
 		else if (mModeHandle == MODE_HANDLE::INTO_MENU_MODE) {
-			mRTC->handleSignal(SignalType::RTC_MOVE_RIGHT_INTO_MENU_MODE);
+			// mRTC->handleSignal(SignalType::RTC_MOVE_RIGHT_INTO_MENU_MODE);
 		}
 		break;
 	}
     case (SignalType::IR_BTN_OK_SIGNAL): {
 		if (mModeHandle == MODE_HANDLE::INTO_SETUP_MODE) {
-			mRTC->handleSignal(SignalType::RTC_SETUP_MODE_OK);
+			// mRTC->handleSignal(SignalType::RTC_SETUP_MODE_OK);
 			mLCD->handleSignal(SignalType::LCD_CLEAR_SCREEN);
 			mLCD->handleSignal(SignalType::LCD_DISPLAY_END_SETUP_MODE);
             mRML->handleSignal(SignalType::REMOTE_LIGHT_END_SETUP_MODE);
 		}
 		else if (mModeHandle == MODE_HANDLE::MENU_MODE) {
+            mModeHandle = MODE_HANDLE::INTO_MENU_MODE;
             mRML->handleSignal(SignalType::REMOTE_LIGHT_INTO_MENU_MODE);
 			mLCD->handleSignal(SignalType::LCD_CLEAR_SCREEN);
-			mRTC->handleSignal(SignalType::RTC_MENU_MODE_OK);
+			// mRTC->handleSignal(SignalType::RTC_MENU_MODE_OK);
 		}
 		break;
 	}
     case (SignalType::IR_BTN_MENU_SIGNAL): {
 		if (mModeHandle == MODE_HANDLE::NONE) {
-			mRML->mTimerDisplayAll->stopTimer();
+            LOGI("Start MENU mode!");
+            mModeHandle = MODE_HANDLE::MENU_MODE;
+            if(mCounterDisplayAllTime != 0){
+                mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_DISPLAY_ALLLTIME_STOP);
+            }
 			mLCD->handleSignal(SignalType::LCD_CLEAR_SCREEN);
 			mLCD->handleSignal(SignalType::LCD_TURN_ON_LIGHT);
 			mLCD->handleSignal(SignalType::IR_BTN_MENU_SIGNAL);
-            mRML->handleSignal(SignalType::REMOTE_LIGHT_MENU_MODE);
+            // mRML->handleSignal(SignalType::REMOTE_LIGHT_MENU_MODE);
 		}
+        else {
+            LOGW("Can't \'TASK MENU MODE\'. During %s!", mPrintListModeHandle.at(mModeHandle).c_str());
+        }
 		break;
 	}
     case (SignalType::IR_BTN_BACK_SIGNAL): {
         if (mModeHandle == MODE_HANDLE::INTO_MENU_MODE) {
+            mModeHandle = MODE_HANDLE::MENU_MODE;
 			mLCD->handleSignal(SignalType::LCD_CLEAR_SCREEN);
-			mRTC->handleSignal(SignalType::RTC_BACK_MENU_MODE);
+			// mRTC->handleSignal(SignalType::RTC_BACK_MENU_MODE);
             mRML->handleSignal(SignalType::REMOTE_LIGHT_MENU_MODE);
 		}
 		else if (mModeHandle == MODE_HANDLE::MENU_MODE) {
+            LOGI("End MENU mode!");
+            mModeHandle = MODE_HANDLE::NONE;
 			mLCD->handleSignal(SignalType::LCD_CLEAR_SCREEN);
             mRML->handleSignal(SignalType::REMOTE_LIGHT_DISPLAY_ALLTIME);
 		}
@@ -220,8 +227,6 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
     }
     case (SignalType::RTC_COUNTER_INSTALL_IRBUTTON_REACHED): {
 		LOGW("Install IR button mode is timeout!!!");
-		mFlagInstallIRButton = 0;
-		LOGI("mFlagInstallIRButton reset: %d", mFlagInstallIRButton);
 		break;
 	}
     case (SignalType::WEB_SET_ALLTIME_DATA_RESPONSE): {
@@ -232,94 +237,108 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
 		}
         break;
     }
+    case (SignalType::IR_BTN_5_SIGNAL): {
+        if(mCounterDisplayAllTime == 0) {
+            mLCD->handleSignal(SignalType::LCD_TURN_ON_LIGHT);
+            mRML->handleSignal(SignalType::REMOTE_LIGHT_DISPLAY_ALLTIME);
+        }
+        else {
+            LOGW("DISPLAY ALL TIME is in progress");
+        }
+        break;
+    }
+    case (SignalType::IR_BTN_6_SIGNAL): {
+        if(mCounterDisplayAllTime == 0) {
+            mLCD->handleSignal(SignalType::LCD_TURN_ON_LIGHT);
+            mRML->handleSignal(SignalType::REMOTE_UPDATE_TIMER_DISPLAY_ALLTIME_TO_TEMPPRESSS);
+            mRML->handleSignal(SignalType::REMOTE_LIGHT_DISPLAY_TEMP_PRESS);
+        }
+        else {
+            LOGW("DISPLAY TEMP PRESS is in progress");
+        }
+        break;
+    }
+    case (SignalType::TIMER_DISPLAY_TEMP_PRESS_SIGNAL): {
+        displayTempPressTimeout();
+        break;
+    }
     default: break;
     }
 }
 
 void Tasks::connectWifiMode() {
+    mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_WIFI_START);
     mLCD->handleSignal(SignalType::LCD_DISPLAY_CONNECT_WIFI);
-    LOGI("WIFI connection %d times", mCounterConnectWifi);
+    LOGI("WIFI connection %d times", mCounterConnectWifi + 1);
 	mNET->handleSignal(SignalType::NETWORK_CHECK_STATUS_WIFI);
-    mRML->mTimerConnectWifi->startTimer();
 }
 
 void Tasks::connectFirebaseMode() {
+    mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_FIREBASE_START);
     mLCD->handleSignal(SignalType::LCD_DISPLAY_CONNECT_WIFI);
-    LOGI("FIREBASE connection %d times", mCounterConnectWifi);
-    mRML->mTimerConnectWifi->updateTimer([this]()
-                                   { mRML->onTimeout(SignalType::TIMER_CONNECT_FIREBASE_SIGNAL); }, DELAY_5S);
-    mRML->mTimerConnectWifi->startTimer();
+    LOGI("FIREBASE connection %d times", mCounterConnectWifi + 1);
     mNET->handleSignal(SignalType::NETWORK_CHECK_STATUS_FIREBASE);
 }
 
 void Tasks::connectNTPMode() {
+    mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_NTP_START);
     mLCD->handleSignal(SignalType::LCD_DISPLAY_CONNECT_WIFI);
-    LOGI("NTP connection %d times", mCounterConnectWifi);
+    LOGI("NTP connection %d times", mCounterConnectWifi + 1);
     mNET->handleSignal(SignalType::NETWORK_CHECK_STATUS_NTP);
-    mRML->mTimerConnectWifi->updateTimer([this]()
-                                   { mRML->onTimeout(SignalType::TIMER_CONNECT_NTP_SIGNAL); }, DELAY_3S);
-    mRML->mTimerConnectWifi->startTimer();
 }
 
-void Tasks::connectWifiTimeout()
-{
-    if (mCounterConnectWifi < REPEATS_10) {
+void Tasks::connectWifiTimeout() {
+    if (mCounterConnectWifi < (REPEATS_10 - 1)) {
         mCounterConnectWifi++;
-        mRML->mTimerConnectWifi->startTimer();
         mRML->handleSignal(SignalType::REMOTE_LIGHT_CONNECT_WIFI);
     }
     else {
-        mCounterConnectWifi = 0;
-        mRML->handleSignal(SignalType::LCD_CONNECT_WIFI_FAILED);
         LOGW("WIFI connection FAILED!");
-        mRML->mTimerConnectWifi->updateTimer(
-            [this]() { mRML->onTimeout(SignalType::TIMER_CONNECT_WIFI_FAILED_GOTO_NEXT_MODE); }, DELAY_5S);
-        mRML->mTimerConnectWifi->startTimer();
+        mCounterConnectWifi = 0;
+        // mRML->handleSignal(SignalType::REMOTE_LIGHT_CONTROL_MODE_NONE);
+        mLCD->handleSignal(SignalType::LCD_CONNECT_WIFI_FAILED);
+        delay(1000);
+        mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_WIFI_TIMEOUT);
     }
 }
 
-void Tasks::connectFirebaseTimeout()
-{
-    if (mCounterConnectWifi < REPEATS_10) {
+void Tasks::connectFirebaseTimeout() {
+    if (mCounterConnectWifi < (REPEATS_10 - 1)) {
         mCounterConnectWifi++;
-        mRML->mTimerConnectWifi->startTimer();
         mRML->handleSignal(SignalType::REMOTE_LIGHT_CONNECT_FIREBASE);
     }
     else {
-        mCounterConnectWifi = 0;
-        mLCD->handleSignal(SignalType::LCD_CONNECT_FIREBASE_FAILED);
         LOGW("Firebase connection FAILED!");
-        mRML->mTimerConnectWifi->updateTimer(
-            [this]() { mRML->onTimeout(SignalType::TIMER_CONNECT_FIREBASE_FAILED_GOTO_NEXT_CONNECT); }, DELAY_5S);
-        mRML->mTimerConnectWifi->startTimer();
+        mCounterConnectWifi = 0;
+        // mRML->handleSignal(SignalType::REMOTE_LIGHT_CONTROL_MODE_NONE);
+        mLCD->handleSignal(SignalType::LCD_CONNECT_FIREBASE_FAILED);
+        mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_FIREBASE_TIMEOUT);
     }
 }
 
-void Tasks::connectNTPTimeout()
-{
-    if (mCounterConnectWifi < REPEATS_10) {
+void Tasks::connectNTPTimeout() {
+    if (mCounterConnectWifi < (REPEATS_10 - 1)) {
 		mCounterConnectWifi++;
-        mRML->mTimerConnectWifi->startTimer();
         mRML->handleSignal(SignalType::REMOTE_LIGHT_CONNECT_NTP);
 	}
 	else {
+        LOGW("NTP connection FAILED!");
 		mCounterConnectWifi = 0;
+        // mRML->handleSignal(SignalType::REMOTE_LIGHT_CONTROL_MODE_NONE);
+        mRTC->handleSignal(SignalType::RTC_SET_FLAG_UPDATE_TIME_WITH_NTP_FAILED);
 		mLCD->handleSignal(SignalType::LCD_CONNECT_NTP_FAILED);
-		LOGW("NTP connection FAILED!");
-        mRML->mTimerConnectWifi->updateTimer(
-            [this]() { mRML->onTimeout(SignalType::TIMER_CONNECT_NTP_FAILED_GOTO_NEXT_CONNECT); }, DELAY_5S);
-        mRML->mTimerConnectWifi->startTimer();
+		mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_NTP_TIMEOUT);
 	}
 }
 
-void Tasks::displayAllTime()
-{
+void Tasks::displayAllTime() {
 	mRTC->handleSignal(SignalType::RTC_DISPLAY_ALL_TIME);
-	mRML->mTimerDisplayAll->startTimer();
+	// mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_DISPLAY_ALLLTIME_START);
 }
 
 void Tasks::displayAllTimeTimeout()
 {
+    LOGI("mCounterDisplayAllTime: %d", mCounterDisplayAllTime);
     if (mCounterDisplayAllTime < REPEATS_30) {
 		mCounterDisplayAllTime++;
         mRML->handleSignal(SignalType::REMOTE_LIGHT_DISPLAY_ALLTIME);
@@ -332,51 +351,58 @@ void Tasks::displayAllTimeTimeout()
 
 void Tasks::displayReadySetupMode()
 {
+    LOGI(".");
     mLCD->handleSignal(SignalType::IR_BTN_APP_SIGNAL);
-	mRML->mTimerDisplayAll->stopTimer();
-	mRML->mTimerDisplaySetupMode->startTimer();
+    if(mCounterDisplayAllTime != 0) {
+        mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_DISPLAY_ALLLTIME_STOP);
+    }
+	mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_DISPLAY_SETUP_MODE_START);
 }
 
 void Tasks::intoSetupMode()
 {
     mModeHandle = MODE_HANDLE::INTO_SETUP_MODE;
-	mRTC->handleSignal(SignalType::RTC_DISPLAY_ALL_TIME);
+	// mRTC->handleSignal(SignalType::RTC_DISPLAY_ALL_TIME);
 }
 
 void Tasks::displayEndSetupMode()
 {
     mModeHandle = MODE_HANDLE::NONE;
-	mRML->mTimerDisplaySetupMode->updateTimer(
-		[this]()
-		{ mRML->onTimeout(SignalType::TIMER_DISPLAY_ALL_END_SETUP_MODE_SIGNAL); }, DELAY_3S);
-    mRML->mTimerDisplaySetupMode->startTimer();
+	mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_DISPLAY_SETUP_MODE_STOP);
 }
 
 void Tasks::installIRButton()
 {
     if (mModeHandle == MODE_HANDLE::NONE)
 	{
-		if (mFlagInstallIRButton == 0) {
-			LOGI("Start the timer for IR button mode installation!");
-			mRTC->handleSignal(SignalType::RTC_COUNTER_INSTALL_IRBUTTON);
-		}
-		mFlagInstallIRButton++;
-		LOGI("mFlagInstallIRButton: %d", mFlagInstallIRButton);
-		if (mFlagInstallIRButton == 6) {
-			LOGI("mFlagInstallIRButton reached 6 times. Go to IR button mode installation.");
-			mFlagInstallIRButton = 0;
-			mRTC->handleSignal(SignalType::REMOTE_LIGHT_PRESS_BUTTON_REACHED_MAX_TIME);
-			mModeHandle = MODE_HANDLE::INSTALL_IR_BUTTON;
-			mIR->handleSignal(SignalType::IR_INSTALL_BUTTON);
-			mLCD->handleSignal(SignalType::LCD_TURN_ON_LIGHT);
-			mLCD->handleSignal(SignalType::LCD_INSTALL_BUTTON1);
-		}
+        if(mCounterDisplayAllTime != 0) {
+            mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_DISPLAY_ALLLTIME_STOP);
+        }
+		mModeHandle = MODE_HANDLE::INSTALL_IR_BUTTON;
+		//mIR->handleSignal(SignalType::IR_INSTALL_BUTTON);
+        mLCD->handleSignal(SignalType::LCD_CLEAR_SCREEN);
+		mLCD->handleSignal(SignalType::LCD_TURN_ON_LIGHT);
+		mLCD->handleSignal(SignalType::LCD_INSTALL_BUTTON1);
 	}
 	else if (mModeHandle == MODE_HANDLE::INSTALL_IR_BUTTON) {
 		LOGI("Install button Done. Move next button");
-		mIR->handleSignal(SignalType::IR_INSTALL_BUTTON_DONE);
+		//mIR->handleSignal(SignalType::IR_INSTALL_BUTTON_DONE);
 	}
     else {
         // Do nothing
     }
+}
+
+void Tasks::displayTempPressTimeout()
+{
+    LOGI("mCounterDisplayAllTime: %d", mCounterDisplayAllTime);
+    if (mCounterDisplayAllTime < REPEATS_10) {
+		mCounterDisplayAllTime++;
+        mRML->handleSignal(SignalType::REMOTE_LIGHT_DISPLAY_TEMP_PRESS);
+	}
+	else {
+		mCounterDisplayAllTime = 0;
+        mRML->handleSignal(SignalType::REMOTE_UPDATE_TIMER_DISPLAY_TEMPPRESSS_TO_ALLTIME);
+		mLCD->handleSignal(SignalType::LCD_CLEAR_TURN_OFF_SCREEN);
+	}
 }

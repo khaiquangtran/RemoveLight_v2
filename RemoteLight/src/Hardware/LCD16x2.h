@@ -15,15 +15,16 @@ public:
   LCD16x2(const LCD16x2 &) = delete;
   LCD16x2 &operator=(const LCD16x2 &) = delete;
 
-  void handleSignal(const SignalType signal, Package *data = nullptr);
+  void handleSignal(const SignalType& signal,const Package *data = nullptr);
+  void init();
 
 private:
   bool checkAddress();
   void displayTimeFromDS1307(struct TimeDS1307 data);
   void displayStartSetupMode();
   void displayEndSetupMode();
-  void displayMenuMode(uint8_t light);
-  void displaySelectedMenuMode(int *data);
+  void displayMenuMode(const uint8_t light);
+  void displaySelectedMenuMode(const int32_t* data);
   void displayStartConnectWifi();
   void displayConnectingWifi();
   void displayConnectWifiSuccess();
@@ -34,7 +35,9 @@ private:
   void displayConnectNTPSuccess();
   void displayConnectFBFailed();
   void displayConnectNTPFailed();
-  void displayInstallButton(Package *data);
+  void displayInstallButton(const Package* data);
+  void displayBluetoothConnectedSuccess();
+  void displayBluetoothConnectedFailed();
 
   std::shared_ptr<RemoteLight>mRML;
   const uint8_t LCD_ADDR = 0x27;

@@ -16,7 +16,6 @@ Light::Light(std::shared_ptr<RemoteLight> rml) : mRML(rml)
 	mSignalLightMap[SignalType::RTC_TURN_ON_LIGHT2] 					= Light2;
 	mSignalLightMap[SignalType::RTC_TURN_OFF_LIGHT2] 					= Light2;
 	mSignalLightMap[SignalType::IR_BTN_3_SIGNAL] 						= Light3;
-	mSignalLightMap[SignalType::PRESS_BTN_3_SIGNAL] 					= Light3;
 	mSignalLightMap[SignalType::RTC_TURN_ON_LIGHT3] 					= Light3;
 	mSignalLightMap[SignalType::RTC_TURN_OFF_LIGHT3] 					= Light3;
 	mSignalLightMap[SignalType::IR_BTN_4_SIGNAL] 						= Light4;
@@ -34,14 +33,14 @@ Light::Light(std::shared_ptr<RemoteLight> rml) : mRML(rml)
 		digitalWrite(it->first, it->second);
 	}
 
-	LOGI("Initialization Light!");
+	LOGI("================== Light ==================");
 }
 
 Light::~Light()
 {
 }
 
-void Light::handleSignal(const SignalType signal, Package *data)
+void Light::handleSignal(const SignalType& signal, const Package* data)
 {
 	switch (signal)
 	{
@@ -50,7 +49,6 @@ void Light::handleSignal(const SignalType signal, Package *data)
 	case SignalType::IR_BTN_2_SIGNAL:
 	case SignalType::PRESS_BTN_2_SIGNAL:
 	case SignalType::IR_BTN_3_SIGNAL:
-	case SignalType::PRESS_BTN_3_SIGNAL:
 	case SignalType::IR_BTN_4_SIGNAL:
 	{
 		controlLight(mSignalLightMap[signal]);
@@ -85,7 +83,7 @@ void Light::handleSignal(const SignalType signal, Package *data)
 	{
 		if(data->getSize() == 2)
 		{
-			int *parseData  = data->getPackage();
+			const int32_t* parseData  = data->getPackage();
 			// LOGI("%d", parseData[1]);
 			controlLight(mSignalLightMap[signal], parseData[1]);
 			mRML->handleSignal(SignalType::WEB_SET_STATUS_LIGHT_DATA_RESPONSE);
@@ -138,13 +136,12 @@ void Light::controlLight(uint8_t light, uint8_t state)
 
 void Light::sendLightStatusToWeb()
 {
-	std::map<uint8_t, bool>::iterator it;
-	const int size = 4;
-	int data[size];
-	data[0] = static_cast<int>(!(mListLight[Light1]));
-	data[1] = static_cast<int>(!(mListLight[Light2]));
-	data[2] = static_cast<int>(!(mListLight[Light3]));
-	data[3] = static_cast<int>(!(mListLight[Light4]));
-	Package package(data, size);
-	mRML->handleSignal(SignalType::WEB_GET_STATUS_DATA_RESPONSE, &package);
+	std::vector<int32_t> vecData = {
+		static_cast<int32_t>(!(mListLight[Light1])),
+		static_cast<int32_t>(!(mListLight[Light2])),
+		static_cast<int32_t>(!(mListLight[Light3])),
+		static_cast<int32_t>(!(mListLight[Light4]))
+	};
+	std::unique_ptr<Package> packData = std::make_unique<Package>(vecData);
+	mRML->handleSignal(SignalType::WEB_GET_STATUS_DATA_RESPONSE, packData.get());
 }

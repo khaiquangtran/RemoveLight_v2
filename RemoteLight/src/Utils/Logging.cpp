@@ -1,6 +1,6 @@
 #include "Logging.h"
 
-void printLog(const char* level, const char* path, const char* fileName, int line, const char* message, ...) {
+void printLog(const char* level, const char* path, const char* fileName, int32_t line, const char* message, ...) {
   #if ENABLE_LOGGING
     if (!level || !path || !fileName || !message) {
       return;
@@ -8,8 +8,8 @@ void printLog(const char* level, const char* path, const char* fileName, int lin
 
     char* pos = strrchr(path, '/');
     char *pathFile = (char *)malloc(20 * sizeof(char));
-    int found = pos - path + 1;
-    int i = 0;
+    int32_t found = pos - path + 1;
+    int32_t i = 0;
     while (path[found] != '\0') {
         pathFile[i++] = path[found++];
     }

@@ -30,14 +30,14 @@ uint8_t Hardware::scanAddress(uint8_t addressInput)
 	return INVALID;
 }
 
-int *Hardware::parseCommandStringToArray(String str, int &size)
+int32_t *Hardware::parseCommandStringToArray(String str, int32_t &size)
 {
     char cstr[100];
     str.toCharArray(cstr, 50);
 
     char *pch;
-    int *pnum = new int[10];
-    int index = 0;
+    int32_t *pnum = new int32_t[10];
+    int32_t index = 0;
     pch = strtok(cstr, " ");
     while (pch != NULL)
     {

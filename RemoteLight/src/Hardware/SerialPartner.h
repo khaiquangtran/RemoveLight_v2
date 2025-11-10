@@ -15,13 +15,19 @@ public:
     SerialPartner(const SerialPartner &) = delete;
     SerialPartner &operator=(const SerialPartner &) = delete;
 
-    void handleSignal(const SignalType signal, Package *data = nullptr);
+    void handleSignal(const SignalType& signal, const Package* data = nullptr);
 
     void listenning() override;
 
 private:
     std::shared_ptr<RemoteLight> mRML;
-    const int BAUD_RATE = 115200;
+    const int32_t TXD2 = 17;
+    const int32_t RXD2 = 16;
+    const int32_t BAUD_RATE = 115200;
+
+    void handleMessage(String receiverData);
+
+    std::map<SignalType, String> mCommandHandle;
 };
 
 #endif // SERIAL_PARTNER_H

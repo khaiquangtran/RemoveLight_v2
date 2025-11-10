@@ -34,6 +34,7 @@ private:
 	const uint16_t DELAY_3S  	= DELAY_1S * 3;
 	const uint16_t DELAY_5S  	= DELAY_1S * 5;
 
+    const uint8_t REPEATS_5  	= 5U;
     const uint8_t REPEATS_10  	= 10U;
     const uint8_t REPEATS_30  	= 30U;
 
@@ -48,6 +49,7 @@ private:
 
     void displayAllTime();
     void displayAllTimeTimeout();
+    void displayTempPressTimeout();
 
     void displayReadySetupMode();
     void intoSetupMode();
@@ -74,8 +76,8 @@ private:
     uint8_t mCounterDisplayAllTime;
 
     CONNECT_STATUS mFlagConnectFirebase;
-    uint8_t mFlagInstallIRButton;
 
+    std::map<MODE_HANDLE, String> mPrintListModeHandle;
 };
 
 #endif // TASKS_H

@@ -1,10 +1,7 @@
 #include "LCD16x2.h"
 
-LCD16x2::LCD16x2(std::shared_ptr<RemoteLight> rml) : mRML(rml)
+LCD16x2::LCD16x2(std::shared_ptr<RemoteLight> rml) : mRML(rml), mRetry(0U)
 {
-	LOGI("Initialization LCD!");
-	mRetry = 0U;
-
 	mButtonStringMap = {
 		{1, "Button 1"},
 		{2, "Button 2"},
@@ -20,6 +17,11 @@ LCD16x2::LCD16x2(std::shared_ptr<RemoteLight> rml) : mRML(rml)
 		{12, "Button Back"},
 	};
 
+	LOGI(" =========== LCD =========== ");
+}
+
+void LCD16x2::init()
+{
 retry:
 	if (checkAddress())
 	{
@@ -89,7 +91,7 @@ LCD16x2::~LCD16x2()
 	delete[] DAY[7];
 }
 
-void LCD16x2::handleSignal(const SignalType signal, Package *data)
+void LCD16x2::handleSignal(const SignalType& signal, const Package *data)
 {
 	if (mRetry >= RETRY)
 	{
@@ -103,7 +105,7 @@ void LCD16x2::handleSignal(const SignalType signal, Package *data)
 		{
 		case (SignalType::LCD_DISPLAY_ALL_TIME):
 		{
-			int *value = data->getPackage();
+			const int32_t* value = data->getPackage();
 			mReceiverTime.second 	= static_cast<uint8_t>(*value++);
 			mReceiverTime.minute 	= static_cast<uint8_t>(*value++);
 			mReceiverTime.hour 		= static_cast<uint8_t>(*value++);
@@ -137,13 +139,13 @@ void LCD16x2::handleSignal(const SignalType signal, Package *data)
 		case (SignalType::LCD_MOVE_RIGHT_MENU_MODE):
 		case (SignalType::LCD_MOVE_LEFT_MENU_MODE):
 		{
-			int *value = data->getPackage();
+			const int32_t* value = data->getPackage();
 			displayMenuMode(*value);
 			break;
 		}
 		case (SignalType::LCD_MENU_MODE_OK):
 		{
-			int *value = data->getPackage();
+			const int32_t* value = data->getPackage();
 			displaySelectedMenuMode(value);
 			break;
 		}
@@ -183,8 +185,15 @@ void LCD16x2::handleSignal(const SignalType signal, Package *data)
 			mLCD->print("BUTTON1");
 			break;
 		case (SignalType::REMOTE_LIGHT_IRBUTTON_INSTALL):
+		{
 			displayInstallButton(data);
 			break;
+		}
+		case SignalType::LCD_BLUETOOTH_CONNECTED_SUCCESS:
+		{
+			displayBluetoothConnectedSuccess();
+			break;
+		}
 		default:
 			LOGW("Signal is not supported yet.");
 			break;
@@ -239,6 +248,8 @@ void LCD16x2::displayTimeFromDS1307(struct TimeDS1307 data)
 	}
 	mLCD->print(data.second);
 	mLCD->print("   ");
+	LOGI("%d %d/%d/%d", static_cast<int32_t>(data.day), static_cast<int32_t>(data.date), static_cast<int32_t>(data.month), static_cast<int32_t>(data.year));
+	LOGI("%d:%d:%d", static_cast<int32_t>(data.hour), static_cast<int32_t>(data.minute), static_cast<int32_t>(data.second));
 }
 
 void LCD16x2::displayStartSetupMode()
@@ -263,7 +274,7 @@ void LCD16x2::displayEndSetupMode()
 	mLCD->print("   HOAN THANH   ");
 }
 
-void LCD16x2::displayMenuMode(uint8_t light)
+void LCD16x2::displayMenuMode(const uint8_t light)
 {
 	LOGI(".");
 	mLCD->setCursor(0, 0);
@@ -288,10 +299,10 @@ void LCD16x2::displayMenuMode(uint8_t light)
 	}
 }
 
-void LCD16x2::displaySelectedMenuMode(int *data)
+void LCD16x2::displaySelectedMenuMode(const int32_t *data)
 {
 	LOGI(".");
-	int flagChooseLight = *data++;
+	int32_t flagChooseLight = *data++;
 	mLCD->setCursor(0, 0);
 	mLCD->print("ON ");
 	mLCD->print(flagChooseLight + 1);
@@ -432,16 +443,16 @@ void LCD16x2::displayConnectNTPFailed()
 	mLCD->print("Failed");
 }
 
-void LCD16x2::displayInstallButton(Package *data)
+void LCD16x2::displayInstallButton(const Package* data)
 {
 	if(data->getSize() == 3)
 	{
-		int *parseData = data->getPackage();
+		const int32_t* parseData = data->getPackage();
 		String str;
 		if(mButtonStringMap.find(parseData[0]) != mButtonStringMap.end()) {
 			str = mButtonStringMap.at(parseData[0]);
 		}
-		int total =  (parseData[1] << 16) | parseData[2];
+		int32_t total =  (parseData[1] << 16) | parseData[2];
 		LOGD("Total: %x", total);
 		mLCD->clear();
 		mLCD->setCursor(0,0);
@@ -450,8 +461,8 @@ void LCD16x2::displayInstallButton(Package *data)
 		mLCD->print("0x");
 		mLCD->print(total, HEX);
 	}
-	else if(data->getSize() == 1) {
-		int *parseData = data->getPackage();
+	else if(data->getSize() == 2) {
+		const int32_t* parseData = data->getPackage();
 		String str;
 		if(mButtonStringMap.find(parseData[0]) != mButtonStringMap.end()) {
 			str = mButtonStringMap.at(parseData[0]);
@@ -465,4 +476,28 @@ void LCD16x2::displayInstallButton(Package *data)
 	else {
 		// Do nothing
 	}
+}
+
+void LCD16x2::displayBluetoothConnectedSuccess()
+{
+	LOGI("Bluetooth Connected Success");
+	mLCD->clear();
+	mLCD->setCursor(0,0);
+	mLCD->print("Bluetooth     ");
+	mLCD->setCursor(0,1);
+	mLCD->print("Connected     ");
+	delay(3000);
+	mLCD->clear();
+}
+
+void LCD16x2::displayBluetoothConnectedFailed()
+{
+	LOGI("Bluetooth Connected Failed");
+	mLCD->clear();
+	mLCD->setCursor(0,0);
+	mLCD->print("Bluetooth     ");
+	mLCD->setCursor(0,1);
+	mLCD->print("Failed        ");
+	delay(3000);
+	mLCD->clear();
 }

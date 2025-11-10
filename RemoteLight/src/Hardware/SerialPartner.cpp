@@ -4,8 +4,7 @@
 SerialPartner::SerialPartner(std::shared_ptr<RemoteLight> rml) : mRML(rml)
 {
     Serial.begin(BAUD_RATE);
-
-    LOGI("Initialization SerialPartner!");
+    LOGI(" ================== SerialPartner ================== ");
 }
 
 SerialPartner::~SerialPartner()
@@ -21,7 +20,7 @@ void SerialPartner::listenning()
     }
 }
 
-void SerialPartner::handleSignal(const SignalType signal, Package *data)
+void SerialPartner::handleSignal(const SignalType& signal, const Package *data)
 {
     switch (signal)
     {

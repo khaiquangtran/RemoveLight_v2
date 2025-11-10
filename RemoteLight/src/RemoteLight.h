@@ -4,6 +4,7 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+
 #include "./Hardware/Hardware.h"
 #include "./Hardware/RTC.h"
 #include "./Hardware/LCD16x2.h"
@@ -11,6 +12,7 @@
 #include "./Hardware/Button.h"
 #include "./Hardware/Light.h"
 #include "./Hardware/SerialPartner.h"
+#include "./Hardware/EEPROMPartner.h"
 #include "./Timer/TimerMgr.h"
 #include "./Tasks/Tasks.h"
 #include "./Network/Network.h"
@@ -49,7 +51,7 @@ private:
 		CHECK_CONNECT_WIFI,
 		CHECK_CONNECT_FIREBASE,
 		CHECK_CONNECT_NTP,
-		INSTALL_IR_BUTTON,
+		DISPLAY_TEMP_PRESS,
 	};
 
 	std::shared_ptr<Hardware> mSerial;
@@ -58,27 +60,32 @@ private:
 	std::shared_ptr<Hardware> mLCD;
 	std::shared_ptr<Hardware> mBTN;
 	std::shared_ptr<Hardware> mLIGHT;
+	std::shared_ptr<Hardware> mEEPROM;
 	std::shared_ptr<Network> mNetwork;
 	std::shared_ptr<Tasks> mTasks;
 
 	const uint16_t DELAY_1S  	= 1000U;
 	const uint16_t DELAY_3S  	= DELAY_1S * 3;
 	const uint16_t DELAY_5S  	= DELAY_1S * 5;
+	const uint16_t DELAY_15S  	= DELAY_1S * 15;
 	const uint32_t DELAY_1D  	= 86400000U;
 	const uint32_t DELAY_3D  	= DELAY_1D * 3;
 
 	bool mCheckConfiguredTimeForLight;
 
 	std::mutex mMutex;
+	std::mutex mMutexControlMode;
 
 	int8_t mFlagConnectNTP;
 	int8_t mFlagUpdateRTC;
 
 	CONTROL_MODE mControlMode;
 
-	std::map<CONTROL_MODE, std::pair<SignalType, String>> mControlModeSignalMap;
+	std::map<CONTROL_MODE, SignalType> mControlModeSignalMap;
 
 	SignalType mFlagTimeout;
+
+	bool mFlagIsStoredSsidPassword;
 
 	void handleControlMode();
 	void handleTimeout();
@@ -87,6 +94,8 @@ private:
 	bool getCheckConfiguredTimeForLight();
 	void setControlMode(const CONTROL_MODE state);
 	CONTROL_MODE getControlMode();
+	void setFlagTimeout(SignalType signal);
+	SignalType getFlagTimeout();
 };
 
 #endif // ! REMOTE_LIGHT_H

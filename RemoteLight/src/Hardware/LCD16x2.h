@@ -20,7 +20,7 @@ public:
 
 private:
   bool checkAddress();
-  void displayTimeFromDS1307(struct TimeDS1307 data);
+  void displayTimeFromDS1307(const Package *data);
   void displayStartSetupMode();
   void displayEndSetupMode();
   void displayMenuMode(const uint8_t light);
@@ -36,8 +36,9 @@ private:
   void displayConnectFBFailed();
   void displayConnectNTPFailed();
   void displayInstallButton(const Package* data);
-  void displayBluetoothConnectedSuccess();
-  void displayBluetoothConnectedFailed();
+  void displayStartProvisioning(const Package* data);
+  void displayProvisioningFailed();
+  void displayProvisioningSuccess();
 
   std::shared_ptr<RemoteLight>mRML;
   const uint8_t LCD_ADDR = 0x27;

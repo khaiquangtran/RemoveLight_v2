@@ -18,6 +18,8 @@ inline String SIGNALTOSTRING(const SignalType& signal)
             return "TASKS_START_SETUP_MODE";
         case SignalType::TASKS_END_SETUP_MODE:
             return "TASKS_END_SETUP_MODE";
+        case SignalType::TASKS_WIFI_PROVISIONING_START:
+            return "TASKS_WIFI_PROVISIONING_START";
         default:
             return "UNKNOWN_SIGNAL";
     }

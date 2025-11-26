@@ -4,8 +4,11 @@
 
 IRRemotePartner::IRRemotePartner(std::shared_ptr<RemoteLight> rml) : mRML(rml), mFlagInstallButton(0U), mValueButton(0), mNumberButton(0)
 {
-  IrReceiver.begin(pinIR, ENABLE_LED_FEEDBACK);
-
+  #if NOT_CONNECT_DEVICE
+    LOGW("IrReceiver.begin skipped. NOT_CONNECT_DEVICE is defined");
+  #else
+    IrReceiver.begin(pinIR, ENABLE_LED_FEEDBACK);
+  #endif
   mButtonSignal = {
     SignalType::IR_BTN_1_SIGNAL,
     SignalType::IR_BTN_2_SIGNAL,

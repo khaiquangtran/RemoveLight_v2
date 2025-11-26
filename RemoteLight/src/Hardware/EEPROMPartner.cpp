@@ -94,11 +94,14 @@ void EEPROMPartner::init()
         mDataPreferences.putString("password", "");
         mSsid = "";
         mPassword = "";
+        LOGW("No stored SSID and Password");
     }
     else
     {
         mSsid = mDataPreferences.getString("ssid", "");
         mPassword = mDataPreferences.getString("password", "");
+        LOGI("Storing SSID: %s", mSsid.c_str());
+        LOGI("Storing Password: %s", mPassword.c_str());
     }
     mDataPreferences.end();
 }
@@ -152,17 +155,23 @@ void EEPROMPartner::handleSignal(const SignalType& signal, const Package* data)
     case SignalType::EEPROM_IS_STORED_SSID_PASSWORD:
     {
         if(mSsid == "" || mPassword == "") {
-            mRML->handleSignal(SignalType::REMOTE_SSID_PASSWORD_EMPTY);
+            LOGW("SSID or Password is empty");
         }
         else {
             String ssid_password = mSsid + String('%') + mPassword;
-            Package pack(ssid_password.c_str());
-            mRML->handleSignal(SignalType::REMOTE_SSID_PASSWORD_STORED, &pack);
+            std::unique_ptr<Package> packData = std::make_unique<Package>(ssid_password.c_str());
+            mRML->handleSignal(SignalType::NETWORK_SSID_PASSWORD_STORED, packData.get());
         }
+        break;
     }
     case SignalType::EEPROM_SEND_LIGHT_TIME_ON_OFF_DATA_TO_RTC:
     {
         sendLightOnOffDataToRTC();
+        break;
+    }
+    case SignalType::EEPROM_NETWORK_SEND_SSID_PASSWORD:
+    {
+        storedDataFromNetwork(data);
         break;
     }
     default:
@@ -226,4 +235,38 @@ void EEPROMPartner::sendLightOnOffDataToRTC() {
     }
     std::unique_ptr<Package> packData = std::make_unique<Package>(vecData);
     mRML->handleSignal(SignalType::RTC_GET_LIGHT_ON_OFF_DATA, packData.get());
+}
+
+void EEPROMPartner::storedDataFromNetwork(const Package* data)
+{
+    if(data == nullptr) {
+        LOGE("Data from Network is null.");
+        return;
+    }
+    else {
+        const int32_t size = data->getSize();
+        const int32_t* value = data->getPackage();
+        if(size <= 0) {
+            LOGE("Length is invalid");
+            return;
+        }
+        String str = "";
+        for (int32_t i =0; i < size; i++) {
+            str += static_cast<char>(value[i]);
+        }
+
+        int32_t sep = str.indexOf('%');
+        if (sep != -1) {
+            mSsid = str.substring(0, sep);
+            mPassword = str.substring(sep + 1);
+
+            LOGI("Storing SSID: %s", mSsid.c_str());
+            LOGI("Storing Password: %s", mPassword.c_str());
+
+            mDataPreferences.begin("ssid_password", false);
+            mDataPreferences.putString("ssid", mSsid.c_str());
+            mDataPreferences.putString("password", mPassword.c_str());
+            mDataPreferences.end();
+        }
+    }
 }

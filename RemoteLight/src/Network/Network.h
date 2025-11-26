@@ -8,11 +8,12 @@
 #include <Firebase_ESP_Client.h>
 // #include "addons/TokenHelper.h"
 // #include "addons/RTDBHelper.h"
-#include "BluetoothSerial.h"
 #include <NTPClient.h>
-#include <WiFiUdp.h>
 #include <array>
 #include <map>
+#include "WiFiProv.h"
+#include "WiFi.h"
+
 
 class RemoteLight;
 
@@ -25,7 +26,6 @@ public:
     Network &operator=(const Network &) = delete;
 
     void handleSignal(const SignalType signal, Package *data = nullptr);
-    void listenBluetoothData();
 
 private:
     std::shared_ptr<RemoteLight>mRML;
@@ -37,22 +37,21 @@ private:
     const uint32_t GMT = 25200; // GMT +7
     WiFiUDP ntpUDP;
     NTPClient *mTimeClient;
-    BluetoothSerial mSerialBT;
-    bool mIsConnectedBT;
-    bool mPermissionToConnectBT;
-    bool mIsConnectedWifi;
+    bool mStatusProvision;
 
     void signUp();
     void connectWifi();
     void checkConnectNTP();
     void checkCommandFirebase();
-    void sendAllTimeDatatoWeb(Package *data);
-    void sendLightDataToWeb(Package *data, int32_t lightIndex);
-    void sendLightStatusToWeb(Package *data);
+    void sendAllTimeDatatoWeb(const Package *data);
+    void sendLightDataToWeb(const Package *data, int32_t lightIndex);
+    void sendLightStatusToWeb(const Package *data);
     void sendResponseSetLightDatatoWeb();
     void getTimeDataFromNtp();
     void setCommandIsIdle();
     void processComboBtnPress();
+    static void SysProvEvent(arduino_event_t *sys_event);
+    void getSSIDAndPasswordFromEEPROM(const Package *data);
 
     int8_t mCommandAllTimerFlag;
 
@@ -92,6 +91,16 @@ private:
     };
     std::map<REQUEST_FB, std::pair<SignalType, int32_t>> mRequestSignalMap;
     std::map<SignalType, int32_t> mSignalLightMap;
+
+    const char * POP = "light1234"; // Proof of possession - otherwise called a PIN - string provided by the device, entered by the user in the phone app
+    const char * SERVICE_NAME = "ESP32_LIGHT"; // Name of your device (the Espressif apps expects by default device name starting with "Prov_")
+    const char * SERVICE_KEY = NULL; // Password used for SofAP method (NULL = no password needed)
+    bool mResetProvisioned;
+    uint8_t uuid[16] = {0xb4, 0xdf, 0x5a, 0x1c, 0x3f, 0x6b, 0xf4, 0xbf,
+                      0xea, 0x4a, 0x82, 0x03, 0x04, 0x90, 0x1a, 0x02 };
+
+    static Network* instance;
+    const static int8_t MAX_RETRY_PROVISION = 3;
 };
 
 #endif // WIFIPARTNER_H

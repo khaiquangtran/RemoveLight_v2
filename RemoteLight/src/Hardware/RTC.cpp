@@ -26,29 +26,35 @@ RTC::RTC(std::shared_ptr<RemoteLight> rml) : mRML(rml), mRTCAddr(0U), mIndexOfAl
 
 void RTC::init()
 {
-	Wire.begin();
+	#if NOT_CONNECT_DEVICE
+		LOGW("Skip init RTC due to NOT_CONNECT_DEVICE is defined");
+		return;
+	#endif
 
-retry:
-	if (checkAddress())
-	{
-		// std::map<String, LightMapValue>::iterator it;
-		// for (it = mTimeOfLight.begin(); it != mTimeOfLight.end(); it++)
-		// {
-		// 	it->second.first.second = getTimeLight(it->first, it->second.first.first.SWITCH);
-		// 	it->second.second.second = getTimeLight(it->first, it->second.second.first.SWITCH);
-		// }
-	}
-	else
-	{
-		if (mCountRetry < RETRY)
+	#ifndef INIT_I2C
+	#define INIT_I2C
+		Wire.begin();
+	#endif
+	retry:
+		if (checkAddress())
 		{
-			mCountRetry++;
-			LOGW("retry %d", mCountRetry);
-			goto retry;
+			// std::map<String, LightMapValue>::iterator it;
+			// for (it = mTimeOfLight.begin(); it != mTimeOfLight.end(); it++)
+			// {
+			// 	it->second.first.second = getTimeLight(it->first, it->second.first.first.SWITCH);
+			// 	it->second.second.second = getTimeLight(it->first, it->second.second.first.SWITCH);
+			// }
 		}
-	}
-
-	LOGI("Initialization RTC!");
+		else
+		{
+			if (mCountRetry < RETRY)
+			{
+				mCountRetry++;
+				LOGW("retry %d", mCountRetry);
+				goto retry;
+			}
+		}
+		LOGI("Initialization RTC!");
 }
 
 RTC::~RTC()
@@ -286,7 +292,19 @@ uint8_t RTC::decToHex(uint8_t val)
 
 struct TimeDS1307 RTC::getTimeData()
 {
+	static uint8_t sec = 0;
 	struct TimeDS1307 data{0U, 0U, 0U, 0U, 0U, 0U, 0U};
+	#if NOT_CONNECT_DEVICE
+		LOGW("getTimeData is dummy data due to NOT_CONNECT_DEVICE is defined");
+		data.second = sec++;
+		data.minute = 0U;
+		data.hour = 12U;
+		data.day = 3U;
+		data.date = 25U;
+		data.month = 8U;
+		data.year = 2025U;
+		return data;
+	#endif
 	if (mRTCAddr == 0)
 	{
 		return data;
@@ -318,6 +336,10 @@ struct TimeDS1307 RTC::getTimeData()
 
 bool RTC::writeData(uint8_t reg, uint8_t data)
 {
+	#if NOT_CONNECT_DEVICE
+		LOGW("writeData is skipped due to NOT_CONNECT_DEVICE is defined");
+		return true;
+	#endif
 	bool result = false;
 	if (mRTCAddr == 0)
 	{
@@ -339,12 +361,15 @@ bool RTC::writeData(uint8_t reg, uint8_t data)
 			result = false;
 		};
 	}
-	delay(10);
 	return result;
 }
 
 bool RTC::setTimeData(struct TimeDS1307 data)
 {
+	#if NOT_CONNECT_DEVICE
+		LOGW("setTimeData is skipped due to NOT_CONNECT_DEVICE is defined");
+		return true;
+	#endif
 	struct
 	{
 		uint8_t value;
@@ -368,7 +393,6 @@ bool RTC::setTimeData(struct TimeDS1307 data)
 			LOGW("%s data is invalid!!!", field.name);
 			return false;
 		}
-
 		LOGI("%s: %d", field.name, static_cast<int32_t>(field.value));
 		uint8_t valueToWrite = decToHex(field.value);
 		if (!writeData(field.reg, valueToWrite))

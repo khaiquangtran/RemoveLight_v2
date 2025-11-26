@@ -5,6 +5,19 @@ void printLog(const char* level, const char* path, const char* fileName, int32_t
     if (!level || !path || !fileName || !message) {
       return;
     }
+    const char* color = COLOR_RESET;
+    if (strcmp(level, "ERROR") == 0)
+    {
+      color = COLOR_RED;
+    }
+    else if (strcmp(level, "WARN") == 0)
+    {
+      color = COLOR_YELLOW;
+    }
+    else
+    {
+      color = COLOR_RESET;
+    }
 
     char* pos = strrchr(path, '/');
     char *pathFile = (char *)malloc(20 * sizeof(char));
@@ -18,8 +31,7 @@ void printLog(const char* level, const char* path, const char* fileName, int32_t
     char buffer[256];
     va_list args;
     va_start(args, message);
-    unsigned long time = millis();
-    snprintf(buffer, sizeof(buffer), "%lu \t[%s][%s:%s():%d]: ",time, level, pathFile, fileName, line);
+    snprintf(buffer, sizeof(buffer), "%s[%s][%s:%s():%d]: ",color, level, pathFile, fileName, line);
     vsnprintf(buffer + strlen(buffer), sizeof(buffer) - strlen(buffer), message, args);
     va_end(args);
 

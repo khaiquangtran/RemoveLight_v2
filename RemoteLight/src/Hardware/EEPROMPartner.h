@@ -30,6 +30,7 @@ private:
     void storedDataFromRTC(const Package* data);
     void sendDataToRTC(const Package* data);
     void sendLightOnOffDataToRTC();
+    void storedDataFromNetwork(const Package* data);
 };
 
 #endif // EEPROM_PARTNER_H

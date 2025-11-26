@@ -5,6 +5,10 @@
 #include <Arduino.h>
 #include <string>
 
+#define COLOR_RED     "\033[31m"
+#define COLOR_YELLOW  "\033[33m"
+#define COLOR_RESET   "\033[0m"
+
 #define LOGE(message, ...) printLog("ERROR", __FILE__, __func__, __LINE__, message, ##__VA_ARGS__)
 #define LOGW(message, ...) printLog("WARN", __FILE__, __func__, __LINE__, message, ##__VA_ARGS__)
 #define LOGI(message, ...) printLog("INFO", __FILE__, __func__, __LINE__, message, ##__VA_ARGS__)

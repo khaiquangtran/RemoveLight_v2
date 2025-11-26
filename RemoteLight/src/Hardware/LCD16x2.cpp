@@ -22,6 +22,14 @@ LCD16x2::LCD16x2(std::shared_ptr<RemoteLight> rml) : mRML(rml), mRetry(0U)
 
 void LCD16x2::init()
 {
+	#if NOT_CONNECT_DEVICE_LCD
+		LOGW("LCD16x2 init skipped due to NOT_CONNECT_DEVICE_LCD is defined");
+		return;
+	#endif
+	#ifndef INIT_I2C
+	#define INIT_I2C
+		Wire.begin();
+	#endif
 retry:
 	if (checkAddress())
 	{
@@ -105,18 +113,14 @@ void LCD16x2::handleSignal(const SignalType& signal, const Package *data)
 		{
 		case (SignalType::LCD_DISPLAY_ALL_TIME):
 		{
-			const int32_t* value = data->getPackage();
-			mReceiverTime.second 	= static_cast<uint8_t>(*value++);
-			mReceiverTime.minute 	= static_cast<uint8_t>(*value++);
-			mReceiverTime.hour 		= static_cast<uint8_t>(*value++);
-			mReceiverTime.day 		= static_cast<uint8_t>(*value++);
-			mReceiverTime.date 		= static_cast<uint8_t>(*value++);
-			mReceiverTime.month 	= static_cast<uint8_t>(*value++);
-			mReceiverTime.year 		= static_cast<uint16_t>(*value);
-			displayTimeFromDS1307(mReceiverTime);
+			displayTimeFromDS1307(data);
 			break;
 		}
 		case (SignalType::LCD_CLEAR_TURN_OFF_SCREEN):
+			#if NOT_CONNECT_DEVICE_LCD
+				LOGW("LCD16x2 handleSignal LCD_CLEAR_TURN_OFF_SCREEN skipped due to NOT_CONNECT_DEVICE_LCD is defined");
+				break;
+			#endif
 			mLCD->clear();
 			mLCD->noBacklight();
 			break;
@@ -189,9 +193,19 @@ void LCD16x2::handleSignal(const SignalType& signal, const Package *data)
 			displayInstallButton(data);
 			break;
 		}
-		case SignalType::LCD_BLUETOOTH_CONNECTED_SUCCESS:
+		case (SignalType::LCD_START_PROVISIONING):
 		{
-			displayBluetoothConnectedSuccess();
+			displayStartProvisioning(data);
+			break;
+		}
+		case (SignalType::LCD_PROVISIONING_FAILED):
+		{
+			displayProvisioningFailed();
+			break;
+		}
+		case (SignalType::LCD_PROVISIONING_SUCCESS):
+		{
+			displayProvisioningSuccess();
 			break;
 		}
 		default:
@@ -213,43 +227,67 @@ bool LCD16x2::checkAddress()
 	}
 }
 
-void LCD16x2::displayTimeFromDS1307(struct TimeDS1307 data)
+void LCD16x2::displayTimeFromDS1307(const Package *data)
 {
+	const int32_t* value = data->getPackage();
+	mReceiverTime.second 	= static_cast<uint8_t>(*value++);
+	mReceiverTime.minute 	= static_cast<uint8_t>(*value++);
+	mReceiverTime.hour 		= static_cast<uint8_t>(*value++);
+	mReceiverTime.day 		= static_cast<uint8_t>(*value++);
+	mReceiverTime.date 		= static_cast<uint8_t>(*value++);
+	mReceiverTime.month 	= static_cast<uint8_t>(*value++);
+	mReceiverTime.year 		= static_cast<uint16_t>(*value);
+	#if NOT_CONNECT_DEVICE_LCD
+		LOGW("displayTimeFromDS1307 skipped due to NOT_CONNECT_DEVICE_LCD is defined");
+		LOGI("%d %d/%d/%d", static_cast<int32_t>(mReceiverTime.day),
+							static_cast<int32_t>(mReceiverTime.date),
+							static_cast<int32_t>(mReceiverTime.month),
+							static_cast<int32_t>(mReceiverTime.year));
+		LOGI("%d:%d:%d", static_cast<int32_t>(mReceiverTime.hour),
+						 static_cast<int32_t>(mReceiverTime.minute),
+						 static_cast<int32_t>(mReceiverTime.second));
+		return;
+	#endif
 	mLCD->setCursor(0, 0);
-	mLCD->print(data.day[DAY]);
+	mLCD->print(mReceiverTime.day[DAY]);
 	mLCD->print(" ");
-	if (data.date < 10) {
+	if (mReceiverTime.date < 10) {
 		mLCD->print("0");
 	}
-	mLCD->print(data.date);
+	mLCD->print(mReceiverTime.date);
 	mLCD->print("/");
-	if (data.month < 10) {
+	if (mReceiverTime.month < 10) {
 		mLCD->print("0");
 	}
-	mLCD->print(data.month);
+	mLCD->print(mReceiverTime.month);
 	mLCD->print("/");
-	mLCD->print(data.year);
+	mLCD->print(mReceiverTime.year);
 	mLCD->print("   ");
 
 	mLCD->setCursor(0, 1);
 	mLCD->print("Time: ");
-	if (data.hour < 10) {
+	if (mReceiverTime.hour < 10) {
 		mLCD->print("0");
 	}
-	mLCD->print(data.hour);
+	mLCD->print(mReceiverTime.hour);
 	mLCD->print(":");
-	if (data.minute < 10) {
+	if (mReceiverTime.minute < 10) {
 		mLCD->print("0");
 	}
-	mLCD->print(data.minute);
+	mLCD->print(mReceiverTime.minute);
 	mLCD->print(":");
-	if (data.second < 10) {
+	if (mReceiverTime.second < 10) {
 		mLCD->print("0");
 	}
-	mLCD->print(data.second);
+	mLCD->print(mReceiverTime.second);
 	mLCD->print("   ");
-	LOGI("%d %d/%d/%d", static_cast<int32_t>(data.day), static_cast<int32_t>(data.date), static_cast<int32_t>(data.month), static_cast<int32_t>(data.year));
-	LOGI("%d:%d:%d", static_cast<int32_t>(data.hour), static_cast<int32_t>(data.minute), static_cast<int32_t>(data.second));
+	LOGI("%d %d/%d/%d", static_cast<int32_t>(mReceiverTime.day),
+						static_cast<int32_t>(mReceiverTime.date),
+						static_cast<int32_t>(mReceiverTime.month),
+						static_cast<int32_t>(mReceiverTime.year));
+	LOGI("%d:%d:%d", static_cast<int32_t>(mReceiverTime.hour),
+					 static_cast<int32_t>(mReceiverTime.minute),
+					 static_cast<int32_t>(mReceiverTime.second));
 }
 
 void LCD16x2::displayStartSetupMode()
@@ -356,6 +394,10 @@ void LCD16x2::displaySelectedMenuMode(const int32_t *data)
 void LCD16x2::displayStartConnectWifi()
 {
 	LOGI("Connecting Wifi");
+	#if NOT_CONNECT_DEVICE_LCD
+		LOGW("displayStartConnectWifi skipped due to NOT_CONNECT_DEVICE_LCD is defined");
+		return;
+	#endif
 	mLCD->setCursor(0,0);
 	mLCD->print("Connecting Wifi  ");
 	mLCD->setCursor(0,1);
@@ -364,6 +406,10 @@ void LCD16x2::displayStartConnectWifi()
 void LCD16x2::displayStartConnectFirebase()
 {
 	LOGI("Connecting FB");
+	#if NOT_CONNECT_DEVICE_LCD
+		LOGW("displayStartConnectFirebase skipped due to NOT_CONNECT_DEVICE_LCD is defined");
+		return;
+	#endif
 	mLCD->setCursor(0,0);
 	mLCD->print("Connecting FB    ");
 	mLCD->setCursor(0,1);
@@ -372,6 +418,10 @@ void LCD16x2::displayStartConnectFirebase()
 void LCD16x2::displayStartConnectNTP()
 {
 	LOGI("Connecting NTP");
+	#if NOT_CONNECT_DEVICE_LCD
+		LOGW("displayStartConnectNTP skipped due to NOT_CONNECT_DEVICE_LCD is defined");
+		return;
+	#endif
 	mLCD->setCursor(0,0);
 	mLCD->print("Connecting NTP  ");
 	mLCD->setCursor(0,1);
@@ -380,12 +430,18 @@ void LCD16x2::displayStartConnectNTP()
 void LCD16x2::displayConnectingWifi()
 {
 	LOGI(".");
+	#if NOT_CONNECT_DEVICE_LCD
+		return;
+	#endif
 	mLCD->print(".");
 }
 
 void LCD16x2::displayConnectWifiSuccess()
 {
 	LOGI("Connect Wifi Success");
+	#if NOT_CONNECT_DEVICE_LCD
+		return;
+	#endif
 	mLCD->clear();
 	mLCD->setCursor(0,0);
 	mLCD->print("Connect Wifi  ");
@@ -396,6 +452,9 @@ void LCD16x2::displayConnectWifiSuccess()
 void LCD16x2::displayConnectWifiFailed()
 {
 	LOGI("Connect Wifi Failed");
+	#if NOT_CONNECT_DEVICE_LCD
+		return;
+	#endif
 	mLCD->clear();
 	mLCD->setCursor(0,0);
 	mLCD->print("Connect Wifi  ");
@@ -406,6 +465,9 @@ void LCD16x2::displayConnectWifiFailed()
 void LCD16x2::displayConnectFirebaseSuccess()
 {
 	LOGI("Connect FB Success");
+	#if NOT_CONNECT_DEVICE_LCD
+		return;
+	#endif
 	mLCD->clear();
 	mLCD->setCursor(0,0);
 	mLCD->print("Connect FB    ");
@@ -416,6 +478,9 @@ void LCD16x2::displayConnectFirebaseSuccess()
 void LCD16x2::displayConnectNTPSuccess()
 {
 	LOGI("Connect NTP Success");
+	#if NOT_CONNECT_DEVICE_LCD
+		return;
+	#endif
 	mLCD->clear();
 	mLCD->setCursor(0,0);
 	mLCD->print("Connect NTP   ");
@@ -426,6 +491,9 @@ void LCD16x2::displayConnectNTPSuccess()
 void LCD16x2::displayConnectFBFailed()
 {
 	LOGI("Connect FB Failed");
+	#if NOT_CONNECT_DEVICE_LCD
+		return;
+	#endif
 	mLCD->clear();
 	mLCD->setCursor(0,0);
 	mLCD->print("Connect FB    ");
@@ -436,6 +504,9 @@ void LCD16x2::displayConnectFBFailed()
 void LCD16x2::displayConnectNTPFailed()
 {
 	LOGI("Connect NTP Failed");
+	#if NOT_CONNECT_DEVICE_LCD
+		return;
+	#endif
 	mLCD->clear();
 	mLCD->setCursor(0,0);
 	mLCD->print("Connect NTP   ");
@@ -478,26 +549,57 @@ void LCD16x2::displayInstallButton(const Package* data)
 	}
 }
 
-void LCD16x2::displayBluetoothConnectedSuccess()
+void LCD16x2::displayStartProvisioning(const Package *data)
 {
-	LOGI("Bluetooth Connected Success");
+#if NOT_CONNECT_DEVICE_LCD
+	LOGW("displayStartProvisioning skipped due to NOT_CONNECT_DEVICE_LCD is defined");
+	return;
+#endif
+	const int32_t *dataStr = data->getPackage();
+	int32_t size = data->getSize();
+
+	String str;
+	str.reserve(size);
+	for (int32_t i =0; i < size; i++) {
+        str += static_cast<char>(dataStr[i]);
+    }
+	int32_t sep = str.indexOf('%');
+	String serviceName = "";
+	String pop = "";
+    if (sep != -1)
+	{
+        serviceName = str.substring(0, sep);
+        pop = str.substring(sep + 1);
+	}
 	mLCD->clear();
-	mLCD->setCursor(0,0);
-	mLCD->print("Bluetooth     ");
-	mLCD->setCursor(0,1);
-	mLCD->print("Connected     ");
-	delay(3000);
-	mLCD->clear();
+	mLCD->setCursor(0, 0);
+	mLCD->print(serviceName.c_str());
+	mLCD->setCursor(0, 1);
+	mLCD->print(pop.c_str());
 }
 
-void LCD16x2::displayBluetoothConnectedFailed()
+void LCD16x2::displayProvisioningFailed()
 {
-	LOGI("Bluetooth Connected Failed");
+	LOGI("Provisioning Failed");
+	#if NOT_CONNECT_DEVICE_LCD
+		return;
+	#endif
 	mLCD->clear();
-	mLCD->setCursor(0,0);
-	mLCD->print("Bluetooth     ");
-	mLCD->setCursor(0,1);
-	mLCD->print("Failed        ");
-	delay(3000);
+	mLCD->setCursor(0, 0);
+	mLCD->print("PROVISIONING   ");
+	mLCD->setCursor(0, 1);
+	mLCD->print("   FAILED!     ");
+}
+
+void LCD16x2::displayProvisioningSuccess()
+{
+	LOGI("Provisioning Success");
+	#if NOT_CONNECT_DEVICE_LCD
+		return;
+	#endif
 	mLCD->clear();
+	mLCD->setCursor(0, 0);
+	mLCD->print("PROVISIONING   ");
+	mLCD->setCursor(0, 1);
+	mLCD->print("   SUCCESS     ");
 }

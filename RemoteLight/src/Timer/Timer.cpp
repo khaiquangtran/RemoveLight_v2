@@ -47,12 +47,12 @@ void Timer::startTimerInterval()
 void Timer::stopTimer()
 {
     mClear.store(true);
-     // Ensure previous task stops
-    #ifdef ARDUINO
-        delay(mDuration.load() - getElapsedTime() + 10);
-    #else
-        std::this_thread::sleep_for(std::chrono::milliseconds(mDuration.load() - getElapsedTime() + 10));
-    #endif
+    //  Ensure previous task stops
+    // #ifdef ARDUINO
+    //     delay(mDuration.load() - getElapsedTime() + 10);
+    // #else
+    //     std::this_thread::sleep_for(std::chrono::milliseconds(mDuration.load() - getElapsedTime() + 10));
+    // #endif
 }
 
 void Timer::stopTimerInterval() {

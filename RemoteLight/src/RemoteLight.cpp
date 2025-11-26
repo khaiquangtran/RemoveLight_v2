@@ -9,8 +9,11 @@ RemoteLight::RemoteLight()
 		{CONTROL_MODE::DISPLAY_ALL, 				SignalType::TASKS_DISPLAY_ALL_TIME},
 		{CONTROL_MODE::START_SETUP_MODE, 			SignalType::TASKS_START_SETUP_MODE},
 		{CONTROL_MODE::END_SETUP_MODE, 				SignalType::TASKS_END_SETUP_MODE},
+		{CONTROL_MODE::WIFI_PROVISIONING_MODE, 		SignalType::TASKS_WIFI_PROVISIONING_START},
 		// {CONTROL_MODE::DISPLAY_TEMP_PRESS, 			std::make_pair(SignalType::TAKS_DISPLAY_TEMP_PRESS, "TASK DISPLAY TEMP PRESS")},
 	};
+	mCurrentControlMode = CONTROL_MODE::NONE;
+	LOGI(" ================== RemoteLight ================== ");
 
 	// mFlagIsStoredSsidPassword = false;
 }
@@ -45,7 +48,6 @@ void RemoteLight::init()
 
 	mTimerCheckConfiguredTimeForLight = mTimerMgr->createTimer([this]()
 															   { this->onTimeout(SignalType::TIMER_CHECK_CONFIGURED_TIME_FOR_LIGHT); }, DELAY_1S);
-	LOGI(" ================== RemoteLight ================== ");
 
 	setControlMode(CONTROL_MODE::NONE);
 	setCheckConfiguredTimeForLight(false);
@@ -55,18 +57,19 @@ void RemoteLight::init()
 	mBTN->init();
 
 	mEEPROM->handleSignal(SignalType::EEPROM_SEND_LIGHT_TIME_ON_OFF_DATA_TO_RTC);
+	mEEPROM->handleSignal(SignalType::EEPROM_IS_STORED_SSID_PASSWORD);
 	mRTC->handleSignal(SignalType::RTC_GET_ALL_ALL);
-	mLCD->handleSignal(SignalType::LCD_DISPLAY_START_CONNECT_WIFI);
+	// mLCD->handleSignal(SignalType::LCD_DISPLAY_START_CONNECT_WIFI);
 	setControlMode(CONTROL_MODE::DISPLAY_ALL);
 }
 
 void RemoteLight::run()
 {
 	// mIR->listenning();
-	mBTN->listenning();
+	// mBTN->listenning();
+	mSerial->listenning();
 	handleControlMode();
 	handleTimeout();
-	mNetwork->listenBluetoothData();
 
 	// if (getCheckConfiguredTimeForLight() == true)
 	// {
@@ -82,8 +85,8 @@ void RemoteLight::handleSignal(const SignalType signal, Package *data)
 	// LOGD("Handle signal value: %d", signal);
 	switch (signal)
 	{
-	case (SignalType::PRESS_BTN_1_SIGNAL):
-	case (SignalType::PRESS_BTN_2_SIGNAL):
+	case (SignalType::BTN_PRESS_BTN_1_SIGNAL):
+	case (SignalType::BTN_PRESS_BTN_2_SIGNAL):
 	// {
 	// 	mTasks->handleSignal(SignalType::TASKS_INSTALL_IR_BUTTON);
 	// }
@@ -109,6 +112,7 @@ void RemoteLight::handleSignal(const SignalType signal, Package *data)
 	case (SignalType::LCD_MOVE_RIGHT_MENU_MODE):
 	case (SignalType::LCD_DISPLAY_ALL_TIME):
 	case (SignalType::REMOTE_LIGHT_IRBUTTON_INSTALL):
+	case (SignalType::LCD_START_PROVISIONING):
 	{
 		mLCD->handleSignal(signal, data);
 		break;
@@ -120,8 +124,9 @@ void RemoteLight::handleSignal(const SignalType signal, Package *data)
 	case (SignalType::LCD_CONNECT_WIFI_FAILED):
 	case (SignalType::LCD_CONNECT_FIREBASE_FAILED):
 	case (SignalType::LCD_CONNECT_NTP_FAILED):
-	case (SignalType::LCD_BLUETOOTH_CONNECTED_SUCCESS):
-	case (SignalType::LCD_BLUETOOTH_CONNECTED_FAILED):
+	case (SignalType::LCD_PROVISIONING_FAILED):
+	case (SignalType::LCD_PROVISIONING_SUCCESS):
+	case (SignalType::LCD_CLEAR_SCREEN):
 	{
 		mLCD->handleSignal(signal);
 		break;
@@ -162,6 +167,7 @@ void RemoteLight::handleSignal(const SignalType signal, Package *data)
 	case (SignalType::WEB_GET_LIGHT3_DATA_RESPONSE):
 	case (SignalType::WEB_GET_LIGHT4_DATA_RESPONSE):
 	case (SignalType::WEB_GET_STATUS_DATA_RESPONSE):
+	case (SignalType::NETWORK_SSID_PASSWORD_STORED):
 	{
 		mNetwork->handleSignal(signal, data);
 		break;
@@ -185,6 +191,16 @@ void RemoteLight::handleSignal(const SignalType signal, Package *data)
 	case (SignalType::NETWORK_GET_TIME_DATE_FROM_NTP):
 	case (SignalType::PRESS_BTN_1_2_COMBO_SIGNAL):
 	{
+		if(PRESS_BTN_1_2_COMBO_SIGNAL == signal)
+		{
+			if (mCurrentControlMode == CONTROL_MODE::DISPLAY_ALL)
+			{
+				LOGD("Stop DISPLAY ALL control mode due to PRESS BTN 1+2 COMBO SIGNAL");
+				mTimerDisplayAll->stopTimer();
+				mTasks->handleSignal(SignalType::TASKS_STOP_DISPLAY_ALL_TIME);
+			}
+			setControlMode(CONTROL_MODE::WIFI_PROVISIONING_MODE);
+		}
 		mNetwork->handleSignal(signal);
 		break;
 	}
@@ -201,6 +217,40 @@ void RemoteLight::handleSignal(const SignalType signal, Package *data)
 	}
 	case (SignalType::IR_ERRPROM_SEND_DATA): {
 		mIR->handleSignal(signal, data);
+		break;
+	}
+	case (SignalType::EEPROM_NETWORK_SEND_SSID_PASSWORD): {
+		mEEPROM->handleSignal(signal, data);
+		break;
+	}
+	case (SignalType::REMOTE_LIGHT_REMOVE_WIFI_PROVISIONING_MODE): {
+		mTimerConnectWifi->updateTimer([this]()
+										{ this->onTimeout(SignalType::TIMER_CONNECT_FIREBASE_SIGNAL); }, DELAY_1S);
+		mTimerConnectWifi->startTimer();
+		setControlMode(CONTROL_MODE::CHECK_CONNECT_FIREBASE);
+		break;
+	}
+	case (SignalType::REMOTE_LIGHT_REMOVE_CONNECT_FIREBASE_MODE): {
+		mTimerConnectWifi->stopTimer();
+		mTimerConnectWifi->updateTimer([this]()
+										{ this->onTimeout(SignalType::TIMER_CONNECT_NTP_SIGNAL); }, DELAY_1S);
+		mTimerConnectWifi->startTimer();
+		setControlMode(CONTROL_MODE::CHECK_CONNECT_NTP);
+		break;
+	}
+	case (SignalType::REMOTE_LIGHT_REMOVE_CONNECT_NTP_MODE): {
+		mTimerConnectWifi->stopTimer();
+		if(mPreviousControlMode == CONTROL_MODE::DISPLAY_ALL)
+		{
+			setControlMode(mPreviousControlMode);
+			mPreviousControlMode = CONTROL_MODE::NONE;
+			mTimerDisplayAll->startTimer();
+		}
+		break;
+	}
+	case (SignalType::REMOTE_LIGHT_REMOVE_DISPLAY_ALL_TIME_MODE): {
+		mTimerDisplayAll->stopTimer();
+		mQueueModeControl.pop();
 		break;
 	}
 	case (SignalType::IR_INSTALL_BUTTON_COMPLETE): {
@@ -243,11 +293,18 @@ void RemoteLight::handleSignal(const SignalType signal, Package *data)
 	case (SignalType::REMOTE_LIGHT_TIMER_CONNECT_WIFI_TIMEOUT):
 	{
 		setControlMode(CONTROL_MODE::DISPLAY_ALL);
-		mTimerDisplayAll->startTimer();
 		break;
 	}
 	case (SignalType::REMOTE_LIGHT_TIMER_CONNECT_FIREBASE_TIMEOUT): {
+		mTimerConnectWifi->updateTimer([this]()
+											{ this->onTimeout(SignalType::TIMER_CONNECT_NTP_SIGNAL); }, DELAY_1S);
+		mTimerConnectWifi->startTimer();
 		setControlMode(CONTROL_MODE::CHECK_CONNECT_NTP);
+		break;
+	}
+	case (SignalType::REMOTE_LIGHT_TIMER_DISPLAY_ALLLTIME_START): {
+		mTimerDisplayAll->startTimer();
+		break;
 	}
 	default: {
 		LOGW("Signal is not supported yet.");
@@ -285,9 +342,33 @@ void RemoteLight::onTimeout(const SignalType signal)
 	}
 }
 
-void RemoteLight::setControlMode(const CONTROL_MODE state) {
+void RemoteLight::setControlMode(const CONTROL_MODE state)
+{
 	std::unique_lock<std::mutex> lock(mMutexControlMode);
-	mControlMode = state;
+	if (state == CONTROL_MODE::NONE)
+	{
+		mControlMode = state;
+	}
+	else
+	{
+		if (mPreviousControlMode == CONTROL_MODE::NONE)
+		{
+			mPreviousControlMode = state;
+			mControlMode = state;
+		}
+		else
+		{
+			if (mPreviousControlMode != state)
+			{
+				mPreviousControlMode = mControlMode
+				mControlMode = state;
+			}
+			else
+			{
+				mControlMode = state;
+			}
+		}
+	}
 }
 
 RemoteLight::CONTROL_MODE RemoteLight::getControlMode() {
@@ -310,11 +391,11 @@ void RemoteLight::handleControlMode() {
 	}
 	else {
 		if(mControlModeSignalMap.find(modeCurrent) != mControlModeSignalMap.end()) {
-			LOGI("Control mode: %s", SIGNALTOSTRING(mControlModeSignalMap.at(modeCurrent)).c_str());
+			LOGI("Task: %s", SIGNALTOSTRING(mControlModeSignalMap.at(modeCurrent)).c_str());
 			mTasks->handleSignal(mControlModeSignalMap.at(modeCurrent));
 		}
 		else {
-			LOGW("Control mode is not supported yet.");
+			LOGW("Task is not supported yet.");
 		}
 		setControlMode(CONTROL_MODE::NONE);
 	}
@@ -365,4 +446,21 @@ void RemoteLight::setFlagTimeout(SignalType signal) {
 SignalType RemoteLight::getFlagTimeout() {
 	std::unique_lock<std::mutex> lock(mMutex);
 	return mFlagTimeout;
+}
+
+int RemoteLight::getPriorityControlMode(const CONTROL_MODE mode) {
+	switch (mode) {
+		case CONTROL_MODE::DISPLAY_ALL:
+			return 1;
+		case CONTROL_MODE::WIFI_PROVISIONING_MODE:
+			return 2;
+		case CONTROL_MODE::CHECK_CONNECT_WIFI:
+			return 2;
+		case CONTROL_MODE::CHECK_CONNECT_FIREBASE:
+			return 2;
+		case CONTROL_MODE::CHECK_CONNECT_NTP:
+			return 2;
+		default:
+			return 0;
+	}
 }

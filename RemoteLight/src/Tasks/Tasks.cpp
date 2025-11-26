@@ -53,6 +53,7 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
         mFlagConnectFirebase = CONNECT_STATUS::SUCCESS;
         LOGI("FIREBASE connection SUCCESS!");
         mLCD->handleSignal(SignalType::LCD_CONNECT_FIREBASE_SUCCESS);
+        mRML->handleSignal(SignalType::REMOTE_LIGHT_REMOVE_CONNECT_FIREBASE_MODE);
         break;
     }
     case (SignalType::TASKS_CONNECT_FIREBASE_FAILED): {
@@ -82,6 +83,7 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
         // mRTC->handleSignal(SignalType::RTC_SET_FLAG_UPDATE_TIME_WITH_NTP_SUCCESS);
         mLCD->handleSignal(SignalType::LCD_CONNECT_NTP_SUCCESS);
         mNET->handleSignal(SignalType::NETWORK_GET_TIME_DATE_FROM_NTP);
+        mRML->handleSignal(SignalType::REMOTE_LIGHT_REMOVE_CONNECT_NTP_MODE);
         break;
     }
     case (SignalType::TASKS_CONNECT_NTP_FAILED): {
@@ -262,33 +264,45 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
         displayTempPressTimeout();
         break;
     }
+    case (SignalType::TASKS_STOP_DISPLAY_ALL_TIME): {
+        mCounterDisplayAllTime = 0;
+        mLCD->handleSignal(SignalType::LCD_CLEAR_SCREEN);
+        break;
+    }
+    case (SignalType::TASKS_WIFI_PROVISIONING_START): {
+        mLCD->handleSignal(SignalType::LCD_TURN_ON_LIGHT);
+        break;
+    }
     default: break;
     }
 }
 
 void Tasks::connectWifiMode() {
     mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_WIFI_START);
+    mLCD->handleSignal(SignalType::LCD_DISPLAY_START_CONNECT_WIFI);
     mLCD->handleSignal(SignalType::LCD_DISPLAY_CONNECT_WIFI);
     LOGI("WIFI connection %d times", mCounterConnectWifi + 1);
 	mNET->handleSignal(SignalType::NETWORK_CHECK_STATUS_WIFI);
 }
 
 void Tasks::connectFirebaseMode() {
-    mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_FIREBASE_START);
+    mRML->handleSignal(SignalType::REMOTE_LIGHT_CONNECT_FIREBASE);
+    mLCD->handleSignal(SignalType::LCD_DISPLAY_START_CONNECT_FIREBASE);
     mLCD->handleSignal(SignalType::LCD_DISPLAY_CONNECT_WIFI);
     LOGI("FIREBASE connection %d times", mCounterConnectWifi + 1);
     mNET->handleSignal(SignalType::NETWORK_CHECK_STATUS_FIREBASE);
 }
 
 void Tasks::connectNTPMode() {
-    mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_NTP_START);
+    mRML->handleSignal(SignalType::REMOTE_LIGHT_CONNECT_NTP);
+    mLCD->handleSignal(SignalType::LCD_DISPLAY_START_CONNECT_NTP);
     mLCD->handleSignal(SignalType::LCD_DISPLAY_CONNECT_WIFI);
     LOGI("NTP connection %d times", mCounterConnectWifi + 1);
     mNET->handleSignal(SignalType::NETWORK_CHECK_STATUS_NTP);
 }
 
 void Tasks::connectWifiTimeout() {
-    if (mCounterConnectWifi < (REPEATS_10 - 1)) {
+    if (mCounterConnectWifi < (REPEATS_5 - 1)) {
         mCounterConnectWifi++;
         mRML->handleSignal(SignalType::REMOTE_LIGHT_CONNECT_WIFI);
     }
@@ -305,6 +319,7 @@ void Tasks::connectWifiTimeout() {
 void Tasks::connectFirebaseTimeout() {
     if (mCounterConnectWifi < (REPEATS_10 - 1)) {
         mCounterConnectWifi++;
+        mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_WIFI_START);
         mRML->handleSignal(SignalType::REMOTE_LIGHT_CONNECT_FIREBASE);
     }
     else {
@@ -319,6 +334,7 @@ void Tasks::connectFirebaseTimeout() {
 void Tasks::connectNTPTimeout() {
     if (mCounterConnectWifi < (REPEATS_10 - 1)) {
 		mCounterConnectWifi++;
+        mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_WIFI_START);
         mRML->handleSignal(SignalType::REMOTE_LIGHT_CONNECT_NTP);
 	}
 	else {
@@ -333,7 +349,7 @@ void Tasks::connectNTPTimeout() {
 
 void Tasks::displayAllTime() {
 	mRTC->handleSignal(SignalType::RTC_DISPLAY_ALL_TIME);
-	// mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_DISPLAY_ALLLTIME_START);
+	mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_DISPLAY_ALLLTIME_START);
 }
 
 void Tasks::displayAllTimeTimeout()
@@ -346,6 +362,7 @@ void Tasks::displayAllTimeTimeout()
 	else {
 		mCounterDisplayAllTime = 0;
 		mLCD->handleSignal(SignalType::LCD_CLEAR_TURN_OFF_SCREEN);
+        mRML->handleSignal(SignalType::REMOTE_LIGHT_REMOVE_DISPLAY_ALL_TIME_MODE);
 	}
 }
 

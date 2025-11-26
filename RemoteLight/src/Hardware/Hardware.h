@@ -12,6 +12,9 @@
 #include "./../Utils/SignalToString.h"
 #include "./RTCDef.h"
 
+#define NOT_CONNECT_DEVICE 1
+#define NOT_CONNECT_DEVICE_LCD 0
+
 typedef unsigned long UL;
 class Hardware
 {
@@ -44,14 +47,18 @@ protected:
   const uint8_t SCL     = 22U;
   const uint8_t SDA     = 21U;
 
-  const uint8_t pinButton_1 = 25U;
-  const uint8_t pinButton_2 = 33U;
+  const uint8_t pinButton_1 = 34U;
+  const uint8_t pinButton_2 = 35U;
   // const uint8_t pinButton_3 = 32U;
 
-  const uint8_t Light1 = 16U;
-  const uint8_t Light2 = 17U;
-  const uint8_t Light3 = 26U;
-  const uint8_t Light4 = 27U;
+  const uint8_t Light1 = 25U;
+  const uint8_t Light2 = 26U;
+  const uint8_t Light3 = 27U;
+  const uint8_t Light4 = 14U;
+
+  const uint8_t Led1 = 5U;
+  const uint8_t Led2 = 18U;
+  const uint8_t Led3 = 19U;
 
   const uint_fast8_t pinIR = 13U;
 

@@ -8,11 +8,11 @@ Light::Light(std::shared_ptr<RemoteLight> rml) : mRML(rml)
 	mListLight[Light4] = HIGH;
 
 	mSignalLightMap[SignalType::IR_BTN_1_SIGNAL] 						= Light1;
-	mSignalLightMap[SignalType::PRESS_BTN_1_SIGNAL] 					= Light1;
+	mSignalLightMap[SignalType::BTN_PRESS_BTN_1_SIGNAL] 					= Light1;
 	mSignalLightMap[SignalType::RTC_TURN_ON_LIGHT1] 					= Light1;
 	mSignalLightMap[SignalType::RTC_TURN_OFF_LIGHT1] 					= Light1;
 	mSignalLightMap[SignalType::IR_BTN_2_SIGNAL] 						= Light2;
-	mSignalLightMap[SignalType::PRESS_BTN_2_SIGNAL] 					= Light2;
+	mSignalLightMap[SignalType::BTN_PRESS_BTN_2_SIGNAL] 					= Light2;
 	mSignalLightMap[SignalType::RTC_TURN_ON_LIGHT2] 					= Light2;
 	mSignalLightMap[SignalType::RTC_TURN_OFF_LIGHT2] 					= Light2;
 	mSignalLightMap[SignalType::IR_BTN_3_SIGNAL] 						= Light3;
@@ -27,12 +27,15 @@ Light::Light(std::shared_ptr<RemoteLight> rml) : mRML(rml)
 	mSignalLightMap[SignalType::WEB_SET_STATUS_LIGHT4_DATA_REQUEST] 	= Light4;
 
 	std::map<uint8_t, bool>::iterator it;
-	for (it = mListLight.begin(); it != mListLight.end(); it++)
-	{
-		pinMode(it->first, OUTPUT);
-		digitalWrite(it->first, it->second);
-	}
-
+	#if NOT_CONNECT_DEVICE
+		LOGW("LIGHT define skipped. NOT_CONNECT_DEVICE is defined");
+	#else
+		for (it = mListLight.begin(); it != mListLight.end(); it++)
+		{
+			pinMode(it->first, OUTPUT);
+			digitalWrite(it->first, it->second);
+		}
+	#endif
 	LOGI("================== Light ==================");
 }
 
@@ -45,9 +48,9 @@ void Light::handleSignal(const SignalType& signal, const Package* data)
 	switch (signal)
 	{
 	case SignalType::IR_BTN_1_SIGNAL:
-	case SignalType::PRESS_BTN_1_SIGNAL:
+	case SignalType::BTN_PRESS_BTN_1_SIGNAL:
 	case SignalType::IR_BTN_2_SIGNAL:
-	case SignalType::PRESS_BTN_2_SIGNAL:
+	case SignalType::BTN_PRESS_BTN_2_SIGNAL:
 	case SignalType::IR_BTN_3_SIGNAL:
 	case SignalType::IR_BTN_4_SIGNAL:
 	{
@@ -103,7 +106,9 @@ void Light::controlLight(uint8_t light, uint8_t state)
 	if(state == 3)
 	{
 		mListLight[light] = (mListLight[light] == HIGH ? LOW : HIGH);
-		digitalWrite(light, mListLight[light]);
+		#if NOT_CONNECT_DEVICE == 0
+			digitalWrite(light, mListLight[light]);
+		#endif
 		if (mListLight[light])
 		{
 			LOGI("Turn OFF %d", light);
@@ -118,7 +123,9 @@ void Light::controlLight(uint8_t light, uint8_t state)
 		if(mListLight[light]  != LOW)
 		{
 			mListLight[light] = LOW;
-			digitalWrite(light, mListLight[light]);
+			#if NOT_CONNECT_DEVICE == 0
+				digitalWrite(light, mListLight[light]);
+			#endif
 		}
 	}
 	else if(state == 0)
@@ -126,7 +133,9 @@ void Light::controlLight(uint8_t light, uint8_t state)
 		if(mListLight[light]  != HIGH)
 		{
 			mListLight[light] = HIGH;
-			digitalWrite(light, mListLight[light]);
+			#if NOT_CONNECT_DEVICE == 0
+				digitalWrite(light, mListLight[light]);
+			#endif
 		}
 	}
 	else {

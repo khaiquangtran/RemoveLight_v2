@@ -4,6 +4,7 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <queue>
 
 #include "./Hardware/Hardware.h"
 #include "./Hardware/RTC.h"
@@ -52,6 +53,7 @@ private:
 		CHECK_CONNECT_FIREBASE,
 		CHECK_CONNECT_NTP,
 		DISPLAY_TEMP_PRESS,
+		WIFI_PROVISIONING_MODE,
 	};
 
 	std::shared_ptr<Hardware> mSerial;
@@ -80,6 +82,7 @@ private:
 	int8_t mFlagUpdateRTC;
 
 	CONTROL_MODE mControlMode;
+	CONTROL_MODE mPreviousControlMode;
 
 	std::map<CONTROL_MODE, SignalType> mControlModeSignalMap;
 
@@ -96,6 +99,8 @@ private:
 	CONTROL_MODE getControlMode();
 	void setFlagTimeout(SignalType signal);
 	SignalType getFlagTimeout();
+
+	int getPriorityControlMode(const CONTROL_MODE mode);
 };
 
 #endif // ! REMOTE_LIGHT_H

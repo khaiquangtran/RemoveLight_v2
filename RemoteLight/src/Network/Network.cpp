@@ -1,15 +1,18 @@
 #include "./Network.h"
 
+Network* Network::instance = nullptr;
+
 Network::Network(std::shared_ptr<RemoteLight>rml) : mRML(rml)
 {
-    mSSID = WIFI_SSID;
-    mPassword = WIFI_PASSWORD;
-    mIsConnectedBT = false;
-    mIsConnectedWifi = false;
-    mPermissionToConnectBT = false;
+    mSSID = "";
+    mPassword = "";
+    mResetProvisioned = true;
+    mStatusProvision = false;
     // WiFi.begin(mSSID, mPassword);
-    // mConfig.api_key = API_KEY;
-    // mConfig.database_url = DATABASE_URL;
+    mConfig.api_key = API_KEY;
+    mConfig.database_url = DATABASE_URL;
+    instance = this; // save pointer instance
+    WiFi.onEvent(SysProvEvent);
 
     mCommandAllTimerFlag = -1;
 
@@ -37,9 +40,7 @@ Network::Network(std::shared_ptr<RemoteLight>rml) : mRML(rml)
         {REQUEST_FB::SETTING_LIGHT4_STATUS, std::make_pair(SignalType::WEB_SET_STATUS_LIGHT4_DATA_REQUEST, 12)},
     };
 
-    // mTimeClient = new NTPClient(ntpUDP, "pool.ntp.org");
-    // mTimeClient->begin();
-    // mTimeClient->setTimeOffset(GMT);
+    mTimeClient = new NTPClient(ntpUDP, "pool.ntp.org");
     LOGI(" =========== Network =========== ");
 }
 
@@ -92,28 +93,32 @@ void Network::handleSignal(const SignalType signal, Package *data) {
         // checkCommandFirebase();
         break;
     }
-    case SignalType::NETWORK_SEND_SSID_PASSWORD: {
-        const int32_t* dat = data->getPackage();
-        const int32_t size = data->getSize();
+    // case SignalType::NETWORK_SEND_SSID_PASSWORD: {
+    //     const int32_t* dat = data->getPackage();
+    //     const int32_t size = data->getSize();
 
-        String str = "";
-        for (int32_t i =0; i < size; i++) {
-            str += static_cast<char>(dat[i]);
-        }
+    //     String str = "";
+    //     for (int32_t i =0; i < size; i++) {
+    //         str += static_cast<char>(dat[i]);
+    //     }
 
-        int32_t sep = str.indexOf('%');
-        if (sep != -1) {
-            mSSID = str.substring(0, sep);
-            mPassword = str.substring(sep + 1);
+    //     int32_t sep = str.indexOf('%');
+    //     if (sep != -1) {
+    //         mSSID = str.substring(0, sep);
+    //         mPassword = str.substring(sep + 1);
 
-            LOGI("SSID: %s", mSSID);
-            LOGI("Password: %s", mPassword);
-        }
-        break;
-    }
+    //         LOGI("SSID: %s", mSSID);
+    //         LOGI("Password: %s", mPassword);
+    //     }
+    //     break;
+    // }
     case SignalType::PRESS_BTN_1_2_COMBO_SIGNAL:
     {
         processComboBtnPress();
+        break;
+    }
+    case SignalType::NETWORK_SSID_PASSWORD_STORED: {
+        getSSIDAndPasswordFromEEPROM(data);
         break;
     }
     default:
@@ -122,6 +127,10 @@ void Network::handleSignal(const SignalType signal, Package *data) {
 }
 
 void Network::connectWifi() {
+    if(mStatusProvision == false)
+    {
+        WiFi.begin(mSSID, mPassword);
+    }
     if (WiFi.status() != WL_CONNECTED) {
         mRML->handleSignal(SignalType::TASKS_CONNECT_WIFI_FAILED);
     }
@@ -131,7 +140,7 @@ void Network::connectWifi() {
 }
 
 void Network::signUp() {
-    // Serial.println("Connecting to Firebase...");
+    // LOGD("Connecting to Firebase...");
     if (Firebase.signUp(&mConfig, &mAuth, "", "") == true) {
         Firebase.begin(&mConfig, &mAuth);
         // Firebase.reconnectWiFi(true);
@@ -150,6 +159,8 @@ void Network::signUp() {
 }
 
 void Network::checkConnectNTP() {
+    mTimeClient->begin();
+    mTimeClient->setTimeOffset(GMT);
     if (mTimeClient->update()) {
         mRML->handleSignal(SignalType::TASKS_CONNECT_NTP_SUCCESS);
     }
@@ -256,7 +267,7 @@ void Network::checkCommandFirebase() {
     }
 }
 
-void Network::sendAllTimeDatatoWeb(Package *data)
+void Network::sendAllTimeDatatoWeb(const Package *data)
 {
     const int32_t SIZE_OF_ALLTIME_DATA = 7U;
     if(data->getSize() != SIZE_OF_ALLTIME_DATA) {
@@ -279,7 +290,7 @@ void Network::sendAllTimeDatatoWeb(Package *data)
     }
 }
 
-void Network::sendLightDataToWeb(Package *data, int32_t lightIndex) {
+void Network::sendLightDataToWeb(const Package *data, int32_t lightIndex) {
     const int32_t SIZE_OF_LIGHT_DATA = 8U;
     if(data->getSize() != SIZE_OF_LIGHT_DATA) {
         LOGI("sendLightDataToWeb(): Length is invalid");
@@ -325,7 +336,7 @@ void Network::sendResponseSetLightDatatoWeb() {
     }
 }
 
-void Network::sendLightStatusToWeb(Package *data) {
+void Network::sendLightStatusToWeb(const Package *data) {
     const int32_t SIZE_OF_LIGHT_STATUS = 4U;
     if(data->getSize() != SIZE_OF_LIGHT_STATUS) {
         LOGE("sendLightStatusToWeb(): Length is invalid");
@@ -386,35 +397,123 @@ void Network::setCommandIsIdle() {
 }
 
 void Network::processComboBtnPress() {
-    if (mIsConnectedWifi == true)
-    {
-        WiFi.disconnect(true);
-        WiFi.mode(WIFI_OFF);
-        mIsConnectedWifi = false;
-        LOGI("WiFi disconnected");
-    }
+    WiFiProv.beginProvision(
+        WIFI_PROV_SCHEME_SOFTAP,
+        WIFI_PROV_SCHEME_HANDLER_NONE,
+        WIFI_PROV_SECURITY_1,
+        POP,
+        SERVICE_NAME,
+        SERVICE_KEY,
+        uuid,
+        mResetProvisioned
+    );
+    WiFiProv.printQR(SERVICE_NAME, POP, "softap");
+}
 
-    if (mSerialBT.begin("ESP32_BT"))
+void Network::SysProvEvent(arduino_event_t *sys_event)
+{
+    switch (sys_event->event_id)
     {
-        mIsConnectedBT = true;
-        mRML->handleSignal(SignalType::LCD_BLUETOOTH_CONNECTED_SUCCESS);
-        LOGI("Bluetooth started");
+    case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+    {
+        uint32_t raw_ip = sys_event->event_info.got_ip.ip_info.ip.addr;
+        IPAddress ip(raw_ip);
+        LOGD("Connected IP address : %s", ip.toString().c_str());
+        break;
     }
-    else
+    case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
     {
-        mIsConnectedBT = false;
-        LOGE("Bluetooth start failed");
-        mRML->handleSignal(SignalType::LCD_BLUETOOTH_CONNECTED_FAILED);
+        LOGE("Disconnected. Connecting to the AP again... ");
+        break;
+    }
+    case ARDUINO_EVENT_PROV_START:
+    {
+        LOGD("Provisioning started");
+        LOGD("Give Credentials of your access point using smartphone app");
+        std::string SERVICE_NAME_STR(instance->SERVICE_NAME);
+        std::string popStr(instance->POP); // POP should be same as SERVICE_KEY
+        std::string dataStr = SERVICE_NAME_STR + "%" + popStr;
+        std::unique_ptr<Package> packData = std::make_unique<Package>(dataStr);
+        instance->mRML->handleSignal(SignalType::LCD_START_PROVISIONING, packData.get());
+        break;
+    }
+    case ARDUINO_EVENT_PROV_CRED_RECV:
+    {
+        LOGD("Received Wi-Fi credentials");
+        LOGD("SSID : %s", (const char *)sys_event->event_info.prov_cred_recv.ssid);
+        LOGD("Password : %s", (const char *)sys_event->event_info.prov_cred_recv.password);
+        instance->mSSID = String((const char *)sys_event->event_info.prov_cred_recv.ssid);
+        instance->mPassword = String((const char *)sys_event->event_info.prov_cred_recv.password);
+        break;
+    }
+    case ARDUINO_EVENT_PROV_CRED_FAIL:
+    {
+        static int8_t retry = 0;
+        retry++;
+        if (retry >= MAX_RETRY_PROVISION)
+        {
+            ESP.restart();
+        }
+        instance->mRML->handleSignal(SignalType::LCD_PROVISIONING_FAILED);
+        LOGE("Provisioning failed! Please reset to factory and retry provisioning");
+        if (sys_event->event_info.prov_fail_reason == WIFI_PROV_STA_AUTH_ERROR)
+        {
+            LOGE("Wi-Fi AP password incorrect");
+        }
+        else
+        {
+            LOGE("Wi-Fi AP not found....Add API \" nvs_flash_erase() \" before beginProvision()");
+        }
+        break;
+    }
+    case ARDUINO_EVENT_PROV_CRED_SUCCESS:
+    {
+        LOGD("Provisioning Successful");
+        instance->mRML->handleSignal(SignalType::LCD_PROVISIONING_SUCCESS);
+        std::string ssid_password = static_cast<std::string>(instance->mSSID.c_str()) + "%" + static_cast<std::string>(instance->mPassword.c_str());
+        std::unique_ptr<Package> packData = std::make_unique<Package>(ssid_password.c_str());
+        instance->mRML->handleSignal(SignalType::EEPROM_NETWORK_SEND_SSID_PASSWORD, packData.get());
+        break;
+    }
+    case ARDUINO_EVENT_PROV_END:
+    {
+        LOGD("Provisioning Ends");
+        instance->mStatusProvision = true;
+        instance->mRML->handleSignal(SignalType::LCD_CLEAR_SCREEN);
+        instance->mRML->handleSignal(SignalType::REMOTE_LIGHT_REMOVE_WIFI_PROVISIONING_MODE);
+        break;
+    }
+    default:
+        break;
     }
 }
 
-void Network::listenBluetoothData() {
-    if (mIsConnectedBT == true)
-    {
-        if (mSerialBT.available())
-        {
-            String data = mSerialBT.readStringUntil('\n');
-            LOGI("Received from Bluetooth: %s", data.c_str());
+void Network::getSSIDAndPasswordFromEEPROM(const Package *data) {
+    if(data == nullptr) {
+        LOGE("Data from EEPROM is null.");
+        return;
+    }
+    else {
+        const int32_t size = data->getSize();
+        const int32_t* value = data->getPackage();
+        if(size <= 0) {
+            LOGE("Data from EEPROM with length is invalid.");
+            return;
+        }
+        else {
+            String str = "";
+            for (int32_t i =0; i < size; i++) {
+                str += static_cast<char>(value[i]);
+            }
+
+            int32_t sep = str.indexOf('%');
+            if (sep != -1) {
+                mSSID = str.substring(0, sep);
+                mPassword = str.substring(sep + 1);
+
+                LOGI("SSID: %s", mSSID.c_str());
+                LOGI("Password: %s", mPassword.c_str());
+            }
         }
     }
 }

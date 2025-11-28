@@ -31,6 +31,7 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
     }
     case (SignalType::TASKS_CONNECT_WIFI_FAILED): {
         LOGW("WIFI connection FAILED!");
+        mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_WIFI_START);
         break;
     }
     case (SignalType::TIMER_CONNECT_WIFI_SIGNAL): {
@@ -265,7 +266,7 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
         break;
     }
     case (SignalType::TASKS_STOP_DISPLAY_ALL_TIME): {
-        mCounterDisplayAllTime = 0;
+        mCounterDisplayAllTime = (REPEATS_30 + 2);
         mLCD->handleSignal(SignalType::LCD_CLEAR_SCREEN);
         break;
     }
@@ -273,12 +274,17 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
         mLCD->handleSignal(SignalType::LCD_TURN_ON_LIGHT);
         break;
     }
+    case (SignalType::TASKS_CONNECT_WIFI_FAILED_SSID_PASSWORD_EMPTY): {
+        LOGW("WIFI connection FAILED! SSID or PASSWORD is empty.");
+        mLCD->handleSignal(SignalType::LCD_CONNECT_WIFI_FAILED_SSID_PASSWORD_EMPTY);
+        mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_WIFI_FAILED_EMPTY_SSID_PASSWORD_START);
+        break;
+    }
     default: break;
     }
 }
 
 void Tasks::connectWifiMode() {
-    mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_WIFI_START);
     mLCD->handleSignal(SignalType::LCD_DISPLAY_START_CONNECT_WIFI);
     mLCD->handleSignal(SignalType::LCD_DISPLAY_CONNECT_WIFI);
     LOGI("WIFI connection %d times", mCounterConnectWifi + 1);
@@ -311,7 +317,6 @@ void Tasks::connectWifiTimeout() {
         mCounterConnectWifi = 0;
         // mRML->handleSignal(SignalType::REMOTE_LIGHT_CONTROL_MODE_NONE);
         mLCD->handleSignal(SignalType::LCD_CONNECT_WIFI_FAILED);
-        delay(1000);
         mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_WIFI_TIMEOUT);
     }
 }
@@ -359,7 +364,7 @@ void Tasks::displayAllTimeTimeout()
 		mCounterDisplayAllTime++;
         mRML->handleSignal(SignalType::REMOTE_LIGHT_DISPLAY_ALLTIME);
 	}
-	else {
+	else if (mCounterDisplayAllTime != (REPEATS_30 + 2)) {
 		mCounterDisplayAllTime = 0;
 		mLCD->handleSignal(SignalType::LCD_CLEAR_TURN_OFF_SCREEN);
         mRML->handleSignal(SignalType::REMOTE_LIGHT_REMOVE_DISPLAY_ALL_TIME_MODE);

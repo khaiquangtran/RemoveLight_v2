@@ -208,6 +208,11 @@ void LCD16x2::handleSignal(const SignalType& signal, const Package *data)
 			displayProvisioningSuccess();
 			break;
 		}
+		case (SignalType::LCD_CONNECT_WIFI_FAILED_SSID_PASSWORD_EMPTY):
+		{
+			displayConnectWifiFailedSSIDPasswordEmpty();
+			break;
+		}
 		default:
 			LOGW("Signal is not supported yet.");
 			break;
@@ -602,4 +607,17 @@ void LCD16x2::displayProvisioningSuccess()
 	mLCD->print("PROVISIONING   ");
 	mLCD->setCursor(0, 1);
 	mLCD->print("   SUCCESS     ");
+}
+
+void LCD16x2::displayConnectWifiFailedSSIDPasswordEmpty()
+{
+	LOGI("Connect Wifi Failed SSID or PASSWORD is empty");
+	#if NOT_CONNECT_DEVICE_LCD
+		return;
+	#endif
+	mLCD->clear();
+	mLCD->setCursor(0,0);
+	mLCD->print("Connect Wifi  ");
+	mLCD->setCursor(0,1);
+	mLCD->print("Failed: Empty");
 }

@@ -174,6 +174,17 @@ void EEPROMPartner::handleSignal(const SignalType& signal, const Package* data)
         storedDataFromNetwork(data);
         break;
     }
+    case SignalType::EEPROM_CLEAR_SSID_PASSOWRD_DATA:
+    {
+        mDataPreferences.begin("ssid_password", false);
+        mDataPreferences.putString("ssid", "");
+        mDataPreferences.putString("password", "");
+        mDataPreferences.end();
+        mSsid = "";
+        mPassword = "";
+        LOGI("Cleared SSID and Password stored in EEPROM");
+        break;
+    }
     default:
         break;
     }

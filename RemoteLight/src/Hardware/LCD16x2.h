@@ -39,6 +39,7 @@ private:
   void displayStartProvisioning(const Package* data);
   void displayProvisioningFailed();
   void displayProvisioningSuccess();
+  void displayConnectWifiFailedSSIDPasswordEmpty();
 
   std::shared_ptr<RemoteLight>mRML;
   const uint8_t LCD_ADDR = 0x27;

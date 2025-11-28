@@ -99,8 +99,6 @@ private:
 	CONTROL_MODE getControlMode();
 	void setFlagTimeout(SignalType signal);
 	SignalType getFlagTimeout();
-
-	int getPriorityControlMode(const CONTROL_MODE mode);
 };
 
 #endif // ! REMOTE_LIGHT_H

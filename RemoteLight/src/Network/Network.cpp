@@ -126,16 +126,29 @@ void Network::handleSignal(const SignalType signal, Package *data) {
     }
 }
 
-void Network::connectWifi() {
-    if(mStatusProvision == false)
+void Network::connectWifi()
+{
+    if (mSSID == "" || mPassword == "")
     {
-        WiFi.begin(mSSID, mPassword);
+        LOGE("SSID or Password is empty!");
+        mRML->handleSignal(SignalType::TASKS_CONNECT_WIFI_FAILED_SSID_PASSWORD_EMPTY);
     }
-    if (WiFi.status() != WL_CONNECTED) {
-        mRML->handleSignal(SignalType::TASKS_CONNECT_WIFI_FAILED);
-    }
-    else {
-        mRML->handleSignal(SignalType::TASKS_CONNECT_WIFI_SUCCESS);
+    else
+    {
+        if (mStatusProvision == false)
+        {
+            WiFi.begin(mSSID, mPassword);
+        }
+        if (WiFi.status() != WL_CONNECTED)
+        {
+            LOGD("Connect to WiFi SSID: %s FAILED", mSSID.c_str());
+            mRML->handleSignal(SignalType::TASKS_CONNECT_WIFI_FAILED);
+        }
+        else
+        {
+            LOGD("Connect to WiFi SSID: %s SUCCESS", mSSID.c_str());
+            mRML->handleSignal(SignalType::TASKS_CONNECT_WIFI_SUCCESS);
+        }
     }
 }
 

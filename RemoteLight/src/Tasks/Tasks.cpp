@@ -27,6 +27,7 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
         mCounterConnectWifi = 0;
         LOGI("WIFI connection SUCCESS!");
         mLCD->handleSignal(SignalType::LCD_CONNECT_WIFI_SUCCESS);
+        mRML->handleSignal(SignalType::REMOTE_LIGHT_REMOVE_CONNECT_WIFI_MODE);
         break;
     }
     case (SignalType::TASKS_CONNECT_WIFI_FAILED): {
@@ -55,11 +56,13 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
         LOGI("FIREBASE connection SUCCESS!");
         mLCD->handleSignal(SignalType::LCD_CONNECT_FIREBASE_SUCCESS);
         mRML->handleSignal(SignalType::REMOTE_LIGHT_REMOVE_CONNECT_FIREBASE_MODE);
+        mRML->handleSignal(SignalType::NETWORK_UPLOAD_DATA_TO_FIREBASE);
         break;
     }
     case (SignalType::TASKS_CONNECT_FIREBASE_FAILED): {
         LOGW("FIREBASE connection FAILED!");
         mFlagConnectFirebase = CONNECT_STATUS::FAILED;
+        mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_WIFI_START);
         break;
     }
     case (SignalType::TIMER_CONNECT_FIREBASE_SIGNAL): {
@@ -80,6 +83,7 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
     }
     case (SignalType::TASKS_CONNECT_NTP_SUCCESS): {
         mCounterConnectWifi = 0;
+        mCounterDisplayAllTime = 0;
         LOGI("NTP connection SUCCESS!");
         // mRTC->handleSignal(SignalType::RTC_SET_FLAG_UPDATE_TIME_WITH_NTP_SUCCESS);
         mLCD->handleSignal(SignalType::LCD_CONNECT_NTP_SUCCESS);
@@ -88,6 +92,7 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
         break;
     }
     case (SignalType::TASKS_CONNECT_NTP_FAILED): {
+        mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_WIFI_START);
         LOGW("NTP connection FAILED!");
         break;
     }
@@ -267,6 +272,7 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
     }
     case (SignalType::TASKS_STOP_DISPLAY_ALL_TIME): {
         mCounterDisplayAllTime = (REPEATS_30 + 2);
+        mCounterConnectWifi = 0;
         mLCD->handleSignal(SignalType::LCD_CLEAR_SCREEN);
         break;
     }
@@ -285,23 +291,31 @@ void Tasks::handleSignal(const SignalType signal, Package *data)
 }
 
 void Tasks::connectWifiMode() {
-    mLCD->handleSignal(SignalType::LCD_DISPLAY_START_CONNECT_WIFI);
+    if(mCounterConnectWifi == 0) {
+        mLCD->handleSignal(SignalType::LCD_DISPLAY_START_CONNECT_WIFI);
+    }
     mLCD->handleSignal(SignalType::LCD_DISPLAY_CONNECT_WIFI);
     LOGI("WIFI connection %d times", mCounterConnectWifi + 1);
 	mNET->handleSignal(SignalType::NETWORK_CHECK_STATUS_WIFI);
 }
 
 void Tasks::connectFirebaseMode() {
-    mRML->handleSignal(SignalType::REMOTE_LIGHT_CONNECT_FIREBASE);
-    mLCD->handleSignal(SignalType::LCD_DISPLAY_START_CONNECT_FIREBASE);
+    if(mCounterConnectWifi == 0) {
+        mLCD->handleSignal(SignalType::LCD_CLEAR_SCREEN);
+        mLCD->handleSignal(SignalType::LCD_DISPLAY_START_CONNECT_FIREBASE);
+        mRML->handleSignal(SignalType::REMOTE_LIGHT_UPDATE_TIMER_CONNECT_FIREBASE);
+    }
     mLCD->handleSignal(SignalType::LCD_DISPLAY_CONNECT_WIFI);
     LOGI("FIREBASE connection %d times", mCounterConnectWifi + 1);
     mNET->handleSignal(SignalType::NETWORK_CHECK_STATUS_FIREBASE);
 }
 
 void Tasks::connectNTPMode() {
-    mRML->handleSignal(SignalType::REMOTE_LIGHT_CONNECT_NTP);
-    mLCD->handleSignal(SignalType::LCD_DISPLAY_START_CONNECT_NTP);
+    if(mCounterConnectWifi == 0) {
+        mLCD->handleSignal(SignalType::LCD_CLEAR_SCREEN);
+        mLCD->handleSignal(SignalType::LCD_DISPLAY_START_CONNECT_NTP);
+        mRML->handleSignal(SignalType::REMOTE_LIGHT_UPDATE_TIMER_CONNECT_NTP);
+    }
     mLCD->handleSignal(SignalType::LCD_DISPLAY_CONNECT_WIFI);
     LOGI("NTP connection %d times", mCounterConnectWifi + 1);
     mNET->handleSignal(SignalType::NETWORK_CHECK_STATUS_NTP);
@@ -324,7 +338,6 @@ void Tasks::connectWifiTimeout() {
 void Tasks::connectFirebaseTimeout() {
     if (mCounterConnectWifi < (REPEATS_10 - 1)) {
         mCounterConnectWifi++;
-        mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_WIFI_START);
         mRML->handleSignal(SignalType::REMOTE_LIGHT_CONNECT_FIREBASE);
     }
     else {
@@ -339,7 +352,6 @@ void Tasks::connectFirebaseTimeout() {
 void Tasks::connectNTPTimeout() {
     if (mCounterConnectWifi < (REPEATS_10 - 1)) {
 		mCounterConnectWifi++;
-        mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_WIFI_START);
         mRML->handleSignal(SignalType::REMOTE_LIGHT_CONNECT_NTP);
 	}
 	else {
@@ -349,6 +361,7 @@ void Tasks::connectNTPTimeout() {
         mRTC->handleSignal(SignalType::RTC_SET_FLAG_UPDATE_TIME_WITH_NTP_FAILED);
 		mLCD->handleSignal(SignalType::LCD_CONNECT_NTP_FAILED);
 		mRML->handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_NTP_TIMEOUT);
+        mCounterDisplayAllTime = 0;
 	}
 }
 

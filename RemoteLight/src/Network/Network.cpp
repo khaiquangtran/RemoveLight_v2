@@ -8,6 +8,7 @@ Network::Network(std::shared_ptr<RemoteLight>rml) : mRML(rml)
     mPassword = "";
     mResetProvisioned = true;
     mStatusProvision = false;
+    mEnableCheckConnectWIFI = false;
     // WiFi.begin(mSSID, mPassword);
     mConfig.api_key = API_KEY;
     mConfig.database_url = DATABASE_URL;
@@ -23,21 +24,11 @@ Network::Network(std::shared_ptr<RemoteLight>rml) : mRML(rml)
         {SignalType::WEB_GET_LIGHT4_DATA_RESPONSE, 4},
     };
 
-    mRequestSignalMap = {
-        {REQUEST_FB::GETTING_LIGHT1_DATA, std::make_pair(SignalType::WEB_GET_LIGHT1_DATA_REQUEST, 1)},
-        {REQUEST_FB::GETTING_LIGHT2_DATA, std::make_pair(SignalType::WEB_GET_LIGHT2_DATA_REQUEST, 1)},
-        {REQUEST_FB::GETTING_LIGHT3_DATA, std::make_pair(SignalType::WEB_GET_LIGHT3_DATA_REQUEST, 1)},
-        {REQUEST_FB::GETTING_LIGHT4_DATA, std::make_pair(SignalType::WEB_GET_LIGHT4_DATA_REQUEST, 1)},
-
-        {REQUEST_FB::SETTING_LIGHT1_DATA, std::make_pair(SignalType::WEB_SET_LIGHT1_DATA_REQUEST, 1)},
-        {REQUEST_FB::SETTING_LIGHT2_DATA, std::make_pair(SignalType::WEB_SET_LIGHT2_DATA_REQUEST, 2)},
-        {REQUEST_FB::SETTING_LIGHT3_DATA, std::make_pair(SignalType::WEB_SET_LIGHT3_DATA_REQUEST, 3)},
-        {REQUEST_FB::SETTING_LIGHT4_DATA, std::make_pair(SignalType::WEB_SET_LIGHT4_DATA_REQUEST, 4)},
-
-        {REQUEST_FB::SETTING_LIGHT1_STATUS, std::make_pair(SignalType::WEB_SET_STATUS_LIGHT1_DATA_REQUEST, 9)},
-        {REQUEST_FB::SETTING_LIGHT2_STATUS, std::make_pair(SignalType::WEB_SET_STATUS_LIGHT2_DATA_REQUEST, 10)},
-        {REQUEST_FB::SETTING_LIGHT3_STATUS, std::make_pair(SignalType::WEB_SET_STATUS_LIGHT3_DATA_REQUEST, 11)},
-        {REQUEST_FB::SETTING_LIGHT4_STATUS, std::make_pair(SignalType::WEB_SET_STATUS_LIGHT4_DATA_REQUEST, 12)},
+    mSettingDataLightMap = {
+        {1, SignalType::WEB_SET_LIGHT1_DATA_REQUEST},
+        {2, SignalType::WEB_SET_LIGHT2_DATA_REQUEST},
+        {3, SignalType::WEB_SET_LIGHT3_DATA_REQUEST},
+        {4, SignalType::WEB_SET_LIGHT4_DATA_REQUEST},
     };
 
     mTimeClient = new NTPClient(ntpUDP, "pool.ntp.org");
@@ -62,14 +53,12 @@ void Network::handleSignal(const SignalType signal, Package *data) {
         break;
     }
     case SignalType::WEB_GET_ALLTIME_DATA_RESPONSE: {
-        sendAllTimeDatatoWeb(data);
         break;
     }
     case SignalType::WEB_GET_LIGHT1_DATA_RESPONSE:
     case SignalType::WEB_GET_LIGHT2_DATA_RESPONSE:
     case SignalType::WEB_GET_LIGHT3_DATA_RESPONSE:
     case SignalType::WEB_GET_LIGHT4_DATA_RESPONSE: {
-        sendLightDataToWeb(data, mSignalLightMap[signal]);
         break;
     }
     case SignalType::WEB_SET_ALLTIME_DATA_RESPONSE:
@@ -78,11 +67,9 @@ void Network::handleSignal(const SignalType signal, Package *data) {
     case SignalType::WEB_SET_LIGHT3_DATA_RESPONSE:
     case SignalType::WEB_SET_LIGHT4_DATA_RESPONSE:
     case SignalType::WEB_SET_STATUS_LIGHT_DATA_RESPONSE: {
-        sendResponseSetLightDatatoWeb();
         break;
     }
     case SignalType::WEB_GET_STATUS_DATA_RESPONSE: {
-        sendLightStatusToWeb(data);
         break;
     }
     case SignalType::NETWORK_GET_TIME_DATE_FROM_NTP: {
@@ -121,6 +108,10 @@ void Network::handleSignal(const SignalType signal, Package *data) {
         getSSIDAndPasswordFromEEPROM(data);
         break;
     }
+    case SignalType::NETWORK_UPLOAD_DATA_TO_FIREBASE: {
+        uploadDataToFirebase();
+        break;
+    }
     default:
         break;
     }
@@ -138,16 +129,7 @@ void Network::connectWifi()
         if (mStatusProvision == false)
         {
             WiFi.begin(mSSID, mPassword);
-        }
-        if (WiFi.status() != WL_CONNECTED)
-        {
-            LOGD("Connect to WiFi SSID: %s FAILED", mSSID.c_str());
-            mRML->handleSignal(SignalType::TASKS_CONNECT_WIFI_FAILED);
-        }
-        else
-        {
-            LOGD("Connect to WiFi SSID: %s SUCCESS", mSSID.c_str());
-            mRML->handleSignal(SignalType::TASKS_CONNECT_WIFI_SUCCESS);
+            mEnableCheckConnectWIFI = true;
         }
     }
 }
@@ -178,199 +160,60 @@ void Network::checkConnectNTP() {
         mRML->handleSignal(SignalType::TASKS_CONNECT_NTP_SUCCESS);
     }
     else {
-        mRML->handleSignal(SignalType::TASKS_CONNECT_NTP_FAILED);
         LOGE("NTP server connect failed");
+        mRML->handleSignal(SignalType::TASKS_CONNECT_NTP_FAILED);
     }
 }
 
-void Network::checkCommandFirebase() {
-    if (Firebase.RTDB.getInt(&mFbdo, DATA_PATHS.at(0))) {
-        REQUEST_FB typeCommand = static_cast<REQUEST_FB>(mFbdo.intData());
-        if(typeCommand > REQUEST_FB::SENT_INFORM && typeCommand < REQUEST_FB::REQUEST_END) {
-            // setCommandIsIdle();
-            switch (typeCommand)
+void Network::uploadDataToFirebase() {
+    for (std::array<String, 4U>::const_iterator it = HEAD_PATH.begin(); it != HEAD_PATH.end(); ++it)
+    {
+        std::string flagPath = FLAG_PATH + std::string(it->c_str());
+        if (Firebase.RTDB.getInt(&mFbdo, flagPath))
+        {
+            LOGW("111");
+            REQUEST_FB flag = static_cast<REQUEST_FB>(mFbdo.intData());
+            if (flag == REQUEST_FB::SET_INFORM)
             {
-            case REQUEST_FB::GETTING_ALLTIME_DATA: {
-                mRML->handleSignal(SignalType::WEB_GET_ALLTIME_DATA_REQUEST);
-                break;
-            }
-            case REQUEST_FB::SETTING_ALLTIME_DATA: {
-                // Format:        hour minute second day date month year
-                std::vector<int32_t> vecData(7, 0);
-                for(int32_t i = 1; i < 8; i++) {
-                    if (Firebase.RTDB.getInt(&mFbdo, ALLTIME_PATH.at(i))) {
-                        if (mFbdo.dataType() == "int32_t") {
-                            vecData.push_back(static_cast<int32_t>(mFbdo.intData()));
-                        }
-                    }
-                    else {
-                        LOGE("REASON: %s", mFbdo.errorReason().c_str());
-                        return;
-                    }
-                }
-                std::unique_ptr<Package> packData = std::make_unique<Package>(vecData);
-                // mRML->handleSignal(SignalType::WEB_SET_ALLTIME_DATA_REQUEST, package);
-                break;
-            }
-            case REQUEST_FB::GETTING_LIGHT1_DATA:
-            case REQUEST_FB::GETTING_LIGHT2_DATA:
-            case REQUEST_FB::GETTING_LIGHT3_DATA:
-            case REQUEST_FB::GETTING_LIGHT4_DATA: {
-                mRML->handleSignal(mRequestSignalMap[typeCommand].first);
-                break;
-            }
-            case REQUEST_FB::SETTING_LIGHT1_DATA:
-            case REQUEST_FB::SETTING_LIGHT2_DATA:
-            case REQUEST_FB::SETTING_LIGHT3_DATA:
-            case REQUEST_FB::SETTING_LIGHT4_DATA: {
-                // Format: swOn hourOn minuteOn secondOn swOff hourOff minuteOff secondOff
-                std::vector<int32_t> vecData(8, 0);
-                String path;
-                for(int32_t i = 1; i < 9; i++)
+                LOGW("111");
+                std::vector<int32_t> vecData(9, 0);
+                int32_t index = std::distance(HEAD_PATH.begin(), it);
+                std::unique_ptr<Package> package = std::make_unique<Package>(vecData);
+                LOGW("Index: %d", index);
+                vecData.push_back(static_cast<int32_t>(index));
+                index++;
+                for (std::array<String, 8U>::const_iterator dataIt = DATA_PATHS.begin(); dataIt != DATA_PATHS.end(); ++dataIt)
                 {
-                    path = LIGHT_PATHS.at(mRequestSignalMap[typeCommand].second) + DATA_PATHS.at(i);
-                    if (Firebase.RTDB.getInt(&mFbdo, path.c_str())) {
-                        if (mFbdo.dataType() == "int32_t") {
-                            vecData.push_back(static_cast<int32_t>(mFbdo.intData()));
-                        }
+                    std::string path = std::string(it->c_str()) + std::string(dataIt->c_str());
+                    LOGW("Path: %s", path.c_str());
+                    if (Firebase.RTDB.getInt(&mFbdo, path))
+                    {
+                        LOGW("data: %d", mFbdo.intData());
+                        vecData.push_back(static_cast<int32_t>(mFbdo.intData()));
                     }
-                    else {
+                    else
+                    {
                         LOGE("REASON: %s", mFbdo.errorReason().c_str());
                         return;
                     }
                 }
-                std::unique_ptr<Package> package = std::make_unique<Package>(vecData);
-                // mRML->handleSignal(mRequestSignalMap[typeCommand].first, package);
-                break;
-            }
-            case REQUEST_FB::GETTING_ALL_STATUS: {
-                mRML->handleSignal(SignalType::WEB_GET_STATUS_DATA_REQUEST);
-                break;
-            }
-            case REQUEST_FB::SETTING_LIGHT1_STATUS:
-            case REQUEST_FB::SETTING_LIGHT2_STATUS:
-            case REQUEST_FB::SETTING_LIGHT3_STATUS:
-            case REQUEST_FB::SETTING_LIGHT4_STATUS: {
-                int32_t data = {0U};
-                std::vector<int32_t> vecData;
-                LOGI("Setting status of light");
-                String path = LIGHT_PATHS.at(5) + DATA_PATHS.at(mRequestSignalMap[typeCommand].second);
-                if (Firebase.RTDB.getInt(&mFbdo, path.c_str())) {
-                    if (mFbdo.dataType() == "int32_t") {
-                        vecData.push_back( static_cast<int32_t>(mFbdo.intData()));
+                if (mSettingDataLightMap.find(index) != mSettingDataLightMap.end())
+                {
+                    LOGW("222");
+                    // mRML->handleSignal(mSettingDataLightMap.at(index), package.get());
+                    LOGW("333");
+                    // Set flag received inform
+                    if (Firebase.RTDB.setInt(&mFbdo, flagPath.c_str(), static_cast<int32_t>(REQUEST_FB::RECEIVED_INFORM)))
+                    {
+                        LOGI("Set flag LIGHT_%d to RECEIVED_INFORM", index);
+                    }
+                    else
+                    {
+                        LOGE("REASON: %s", mFbdo.errorReason().c_str());
                     }
                 }
-                else {
-                    LOGE("REASON: %s", mFbdo.errorReason().c_str());
-                    break;
-                }
-                std::unique_ptr<Package> package = std::make_unique<Package>(vecData);
-                // mRML->handleSignal(mRequestSignalMap[typeCommand].first, package);
-                break;
-            }
-            default:
-                break;
             }
         }
-    }
-    else {
-        LOGE("REASON: %s", mFbdo.errorReason().c_str());
-        mRML->handleSignal(SignalType::TASKS_CONNECT_RETRY);
-        return;
-    }
-}
-
-void Network::sendAllTimeDatatoWeb(const Package *data)
-{
-    const int32_t SIZE_OF_ALLTIME_DATA = 7U;
-    if(data->getSize() != SIZE_OF_ALLTIME_DATA) {
-        LOGE("sendAllTimeDatatoWeb(): Length is invalid");
-    }
-    else {
-        const int32_t START_INDEX_ALLTIME_PATH = 1U;
-        const int32_t* parseData  = data->getPackage();
-        for(int32_t i = 0; i < SIZE_OF_ALLTIME_DATA; i++)
-        {
-            if (Firebase.RTDB.setInt(&mFbdo, ALLTIME_PATH.at(i + START_INDEX_ALLTIME_PATH), parseData[i])) {
-                LOGI("Sent SECOND DATA");
-            }
-            else {
-                LOGE("REASON: %s", mFbdo.errorReason().c_str());
-                return;
-            }
-        }
-        sendResponseSetLightDatatoWeb();
-    }
-}
-
-void Network::sendLightDataToWeb(const Package *data, int32_t lightIndex) {
-    const int32_t SIZE_OF_LIGHT_DATA = 8U;
-    if(data->getSize() != SIZE_OF_LIGHT_DATA) {
-        LOGI("sendLightDataToWeb(): Length is invalid");
-    }
-    else {
-        // ---------Format---------
-        // swOn      = parseData[0]
-        // hourOn    = parseData[1]
-        // minuteOn  = parseData[2]
-        // secondOn  = parseData[3]
-        // swOff     = parseData[4]
-        // hourOff   = parseData[5]
-        // minuteOff = parseData[6]
-        // secondOff = parseData[7]
-
-        String path;
-        const int32_t START_INDEX_LIGHT_PATH = 1U;
-
-        const int32_t* parseData  = data->getPackage();
-
-        for(int32_t i = 0; i < 8; i++)
-        {
-            path = LIGHT_PATHS.at(lightIndex) + DATA_PATHS.at(i + START_INDEX_LIGHT_PATH);
-            if (Firebase.RTDB.setInt(&mFbdo, path.c_str(), parseData[i])) {
-                LOGI("Sent DATA");
-            }
-            else {
-                LOGE("REASON: %s", mFbdo.errorReason().c_str());
-                return;
-            }
-        }
-        sendResponseSetLightDatatoWeb();
-    }
-}
-
-void Network::sendResponseSetLightDatatoWeb() {
-    const int32_t INDEX_COMMAND_PATH = 0U;
-    if (Firebase.RTDB.setInt(&mFbdo, DATA_PATHS.at(INDEX_COMMAND_PATH), static_cast<int32_t>(REQUEST_FB::SENT_INFORM))) {
-        LOGI("Sent response");
-    }
-    else {
-        LOGE("FAILED: ", mFbdo.errorReason().c_str());
-    }
-}
-
-void Network::sendLightStatusToWeb(const Package *data) {
-    const int32_t SIZE_OF_LIGHT_STATUS = 4U;
-    if(data->getSize() != SIZE_OF_LIGHT_STATUS) {
-        LOGE("sendLightStatusToWeb(): Length is invalid");
-    }
-    else {
-        String path;
-        const int32_t INDEX_STATUS_PATH = 5U;
-        const int32_t START_INDEX_STATUS_PATH = 9U;
-        const int32_t* parseData  = data->getPackage();
-        for(int32_t i = 0; i < SIZE_OF_LIGHT_STATUS; i++)
-        {
-            path = LIGHT_PATHS.at(INDEX_STATUS_PATH) + DATA_PATHS.at(i + START_INDEX_STATUS_PATH);
-            if (Firebase.RTDB.setInt(&mFbdo, path.c_str(), parseData[i])) {
-                LOGI("Sent STATUS");
-            }
-            else {
-                LOGE("FAILED: ", mFbdo.errorReason().c_str());
-                return;
-            }
-        }
-        sendResponseSetLightDatatoWeb();
     }
 }
 
@@ -398,17 +241,6 @@ void Network::getTimeDataFromNtp()
     mRML->handleSignal(SignalType::NETWORK_SEND_TIME_DATE_FROM_NTP, package.get());
 }
 
-void Network::setCommandIsIdle() {
-    const int32_t INDEX_COMMAND_PATH = 0U;
-    // Inform to Firebase server
-    if (Firebase.RTDB.setInt(&mFbdo, DATA_PATHS.at(INDEX_COMMAND_PATH), static_cast<int32_t>(REQUEST_FB::IDLE))) {
-        LOGI("Sent IDLE COMMAND");
-    }
-    else {
-        LOGE("REASON: %s", mFbdo.errorReason().c_str());
-    }
-}
-
 void Network::processComboBtnPress() {
     WiFiProv.beginProvision(
         WIFI_PROV_SCHEME_SOFTAP,
@@ -431,12 +263,18 @@ void Network::SysProvEvent(arduino_event_t *sys_event)
     {
         uint32_t raw_ip = sys_event->event_info.got_ip.ip_info.ip.addr;
         IPAddress ip(raw_ip);
+        LOGD("Connect to WiFi SSID: %s", (const char *)sys_event->event_info.prov_cred_recv.ssid);
         LOGD("Connected IP address : %s", ip.toString().c_str());
+        instance->mRML->handleSignal(SignalType::TASKS_CONNECT_WIFI_SUCCESS);
         break;
     }
     case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
     {
         LOGE("Disconnected. Connecting to the AP again... ");
+        if (instance->mEnableCheckConnectWIFI) {
+            instance->mRML->handleSignal(SignalType::TASKS_CONNECT_WIFI_FAILED);
+            instance->mEnableCheckConnectWIFI = false;
+        }
         break;
     }
     case ARDUINO_EVENT_PROV_START:
@@ -462,12 +300,14 @@ void Network::SysProvEvent(arduino_event_t *sys_event)
     case ARDUINO_EVENT_PROV_CRED_FAIL:
     {
         static int8_t retry = 0;
+        if(retry == 0) {
+            instance->mRML->handleSignal(SignalType::LCD_PROVISIONING_FAILED);
+        }
         retry++;
         if (retry >= MAX_RETRY_PROVISION)
         {
             ESP.restart();
         }
-        instance->mRML->handleSignal(SignalType::LCD_PROVISIONING_FAILED);
         LOGE("Provisioning failed! Please reset to factory and retry provisioning");
         if (sys_event->event_info.prov_fail_reason == WIFI_PROV_STA_AUTH_ERROR)
         {
@@ -492,7 +332,6 @@ void Network::SysProvEvent(arduino_event_t *sys_event)
     {
         LOGD("Provisioning Ends");
         instance->mStatusProvision = true;
-        instance->mRML->handleSignal(SignalType::LCD_CLEAR_SCREEN);
         instance->mRML->handleSignal(SignalType::REMOTE_LIGHT_REMOVE_WIFI_PROVISIONING_MODE);
         break;
     }

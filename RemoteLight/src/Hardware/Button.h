@@ -24,10 +24,22 @@ private:
   void addButton(uint8_t pin, SignalType signal);
 
 private:
-  std::shared_ptr<RemoteLight> mRML;
-  std::map<uint8_t, std::pair<std::pair<UL, stateButton>, SignalType>> mListButton;
-  const UL DEPAY = 50U;
+struct ButtonInfo
+  {
+    unsigned long debounceTime = 0;
+    bool prevRaw = HIGH;     // raw not debounce
+    bool stableState = HIGH; // state after debounce
 
+    unsigned long pressStart = 0;
+    bool longPressed = false;
+
+    SignalType signal; // short-press signal
+  };
+
+  std::shared_ptr<RemoteLight> mRML;
+  std::map<uint8_t, ButtonInfo> mListButton;
+
+  const UL DEPAY = 50U;
 };
 
 #endif // BUTTON_H

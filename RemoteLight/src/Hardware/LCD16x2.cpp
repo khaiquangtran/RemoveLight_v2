@@ -17,7 +17,7 @@ LCD16x2::LCD16x2(std::shared_ptr<RemoteLight> rml) : mRML(rml), mRetry(0U)
 		{12, "Button Back"},
 	};
 
-	LOGI(" =========== LCD =========== ");
+	LOGD(" =========== LCD =========== ");
 }
 
 void LCD16x2::init()
@@ -223,11 +223,11 @@ void LCD16x2::handleSignal(const SignalType& signal, const Package *data)
 bool LCD16x2::checkAddress()
 {
 	if (scanAddress(LCD_ADDR) == Hardware::INVALID) {
-		LOGI("No find LCD");
+		LOGD("No find LCD");
 		return false;
 	}
 	else {
-		LOGI("Find out LCD");
+		LOGD("Find out LCD");
 		return true;
 	}
 }
@@ -244,11 +244,11 @@ void LCD16x2::displayTimeFromDS1307(const Package *data)
 	mReceiverTime.year 		= static_cast<uint16_t>(*value);
 	#if NOT_CONNECT_DEVICE_LCD
 		LOGW("displayTimeFromDS1307 skipped due to NOT_CONNECT_DEVICE_LCD is defined");
-		LOGI("%d %d/%d/%d", static_cast<int32_t>(mReceiverTime.day),
+		LOGD("%d %d/%d/%d", static_cast<int32_t>(mReceiverTime.day),
 							static_cast<int32_t>(mReceiverTime.date),
 							static_cast<int32_t>(mReceiverTime.month),
 							static_cast<int32_t>(mReceiverTime.year));
-		LOGI("%d:%d:%d", static_cast<int32_t>(mReceiverTime.hour),
+		LOGD("%d:%d:%d", static_cast<int32_t>(mReceiverTime.hour),
 						 static_cast<int32_t>(mReceiverTime.minute),
 						 static_cast<int32_t>(mReceiverTime.second));
 		return;
@@ -286,18 +286,18 @@ void LCD16x2::displayTimeFromDS1307(const Package *data)
 	}
 	mLCD->print(mReceiverTime.second);
 	mLCD->print("   ");
-	LOGI("%d %d/%d/%d", static_cast<int32_t>(mReceiverTime.day),
+	LOGD("%d %d/%d/%d", static_cast<int32_t>(mReceiverTime.day),
 						static_cast<int32_t>(mReceiverTime.date),
 						static_cast<int32_t>(mReceiverTime.month),
 						static_cast<int32_t>(mReceiverTime.year));
-	LOGI("%d:%d:%d", static_cast<int32_t>(mReceiverTime.hour),
+	LOGD("%d:%d:%d", static_cast<int32_t>(mReceiverTime.hour),
 					 static_cast<int32_t>(mReceiverTime.minute),
 					 static_cast<int32_t>(mReceiverTime.second));
 }
 
 void LCD16x2::displayStartSetupMode()
 {
-	LOGI(".");
+	LOGD(".");
 	mLCD->clear();
 	mLCD->backlight();
 	mLCD->setCursor(0, 0);
@@ -308,7 +308,7 @@ void LCD16x2::displayStartSetupMode()
 
 void LCD16x2::displayEndSetupMode()
 {
-	LOGI(".");
+	LOGD(".");
 	mLCD->clear();
 	mLCD->backlight();
 	mLCD->setCursor(0, 0);
@@ -319,7 +319,7 @@ void LCD16x2::displayEndSetupMode()
 
 void LCD16x2::displayMenuMode(const uint8_t light)
 {
-	LOGI(".");
+	LOGD(".");
 	mLCD->setCursor(0, 0);
 	mLCD->print("CHON DEN CAI DAT:");
 	mLCD->setCursor(0, 1);
@@ -344,7 +344,7 @@ void LCD16x2::displayMenuMode(const uint8_t light)
 
 void LCD16x2::displaySelectedMenuMode(const int32_t *data)
 {
-	LOGI(".");
+	LOGD(".");
 	int32_t flagChooseLight = *data++;
 	mLCD->setCursor(0, 0);
 	mLCD->print("ON ");
@@ -398,7 +398,7 @@ void LCD16x2::displaySelectedMenuMode(const int32_t *data)
 
 void LCD16x2::displayStartConnectWifi()
 {
-	LOGI("Connecting Wifi");
+	LOGD("Connecting Wifi");
 	#if NOT_CONNECT_DEVICE_LCD
 		LOGW("displayStartConnectWifi skipped due to NOT_CONNECT_DEVICE_LCD is defined");
 		return;
@@ -410,7 +410,7 @@ void LCD16x2::displayStartConnectWifi()
 
 void LCD16x2::displayStartConnectFirebase()
 {
-	LOGI("Connecting FB");
+	LOGD("Connecting FB");
 	#if NOT_CONNECT_DEVICE_LCD
 		LOGW("displayStartConnectFirebase skipped due to NOT_CONNECT_DEVICE_LCD is defined");
 		return;
@@ -422,7 +422,7 @@ void LCD16x2::displayStartConnectFirebase()
 
 void LCD16x2::displayStartConnectNTP()
 {
-	LOGI("Connecting NTP");
+	LOGD("Connecting NTP");
 	#if NOT_CONNECT_DEVICE_LCD
 		LOGW("displayStartConnectNTP skipped due to NOT_CONNECT_DEVICE_LCD is defined");
 		return;
@@ -434,7 +434,7 @@ void LCD16x2::displayStartConnectNTP()
 
 void LCD16x2::displayConnectingWifi()
 {
-	LOGI(".");
+	LOGD(".");
 	#if NOT_CONNECT_DEVICE_LCD
 		return;
 	#endif
@@ -443,7 +443,7 @@ void LCD16x2::displayConnectingWifi()
 
 void LCD16x2::displayConnectWifiSuccess()
 {
-	LOGI("Connect Wifi Success");
+	LOGD("Connect Wifi Success");
 	#if NOT_CONNECT_DEVICE_LCD
 		return;
 	#endif
@@ -456,7 +456,7 @@ void LCD16x2::displayConnectWifiSuccess()
 
 void LCD16x2::displayConnectWifiFailed()
 {
-	LOGI("Connect Wifi Failed");
+	LOGD("Connect Wifi Failed");
 	#if NOT_CONNECT_DEVICE_LCD
 		return;
 	#endif
@@ -469,7 +469,7 @@ void LCD16x2::displayConnectWifiFailed()
 
 void LCD16x2::displayConnectFirebaseSuccess()
 {
-	LOGI("Connect FB Success");
+	LOGD("Connect FB Success");
 	#if NOT_CONNECT_DEVICE_LCD
 		return;
 	#endif
@@ -482,7 +482,7 @@ void LCD16x2::displayConnectFirebaseSuccess()
 
 void LCD16x2::displayConnectNTPSuccess()
 {
-	LOGI("Connect NTP Success");
+	LOGD("Connect NTP Success");
 	#if NOT_CONNECT_DEVICE_LCD
 		return;
 	#endif
@@ -495,7 +495,7 @@ void LCD16x2::displayConnectNTPSuccess()
 
 void LCD16x2::displayConnectFBFailed()
 {
-	LOGI("Connect FB Failed");
+	LOGD("Connect FB Failed");
 	#if NOT_CONNECT_DEVICE_LCD
 		return;
 	#endif
@@ -508,7 +508,7 @@ void LCD16x2::displayConnectFBFailed()
 
 void LCD16x2::displayConnectNTPFailed()
 {
-	LOGI("Connect NTP Failed");
+	LOGD("Connect NTP Failed");
 	#if NOT_CONNECT_DEVICE_LCD
 		return;
 	#endif
@@ -585,7 +585,7 @@ void LCD16x2::displayStartProvisioning(const Package *data)
 
 void LCD16x2::displayProvisioningFailed()
 {
-	LOGI("Provisioning Failed");
+	LOGD("Provisioning Failed");
 	#if NOT_CONNECT_DEVICE_LCD
 		return;
 	#endif
@@ -598,7 +598,7 @@ void LCD16x2::displayProvisioningFailed()
 
 void LCD16x2::displayProvisioningSuccess()
 {
-	LOGI("Provisioning Success");
+	LOGD("Provisioning Success");
 	#if NOT_CONNECT_DEVICE_LCD
 		return;
 	#endif
@@ -611,7 +611,7 @@ void LCD16x2::displayProvisioningSuccess()
 
 void LCD16x2::displayConnectWifiFailedSSIDPasswordEmpty()
 {
-	LOGI("Connect Wifi Failed SSID or PASSWORD is empty");
+	LOGD("Connect Wifi Failed SSID or PASSWORD is empty");
 	#if NOT_CONNECT_DEVICE_LCD
 		return;
 	#endif

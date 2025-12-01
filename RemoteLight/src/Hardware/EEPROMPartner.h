@@ -31,6 +31,7 @@ private:
     void sendDataToRTC(const Package* data);
     void sendLightOnOffDataToRTC();
     void storedDataFromNetwork(const Package* data);
+    void storeDataFromSeverFirebase(const Package* data);
 };
 
 #endif // EEPROM_PARTNER_H

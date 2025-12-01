@@ -31,7 +31,7 @@ void printLog(const char* level, const char* path, const char* fileName, int32_t
     char buffer[256];
     va_list args;
     va_start(args, message);
-    snprintf(buffer, sizeof(buffer), "%s[%s][%s:%s():%d]: ",color, level, pathFile, fileName, line);
+    snprintf(buffer, sizeof(buffer), "%s[%s]\t[%s:%s():%d]: ",color, level, pathFile, fileName, line);
     vsnprintf(buffer + strlen(buffer), sizeof(buffer) - strlen(buffer), message, args);
     va_end(args);
 

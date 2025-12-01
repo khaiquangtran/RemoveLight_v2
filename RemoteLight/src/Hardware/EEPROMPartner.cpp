@@ -185,6 +185,15 @@ void EEPROMPartner::handleSignal(const SignalType& signal, const Package* data)
         LOGI("Cleared SSID and Password stored in EEPROM");
         break;
     }
+    case SignalType::WEB_SET_LIGHT1_DATA_REQUEST:
+    case SignalType::WEB_SET_LIGHT2_DATA_REQUEST:
+    case SignalType::WEB_SET_LIGHT3_DATA_REQUEST:
+    case SignalType::WEB_SET_LIGHT4_DATA_REQUEST:
+    {
+        LOGW("5555555");
+        storeDataFromSeverFirebase(data);
+        break;
+    }
     default:
         break;
     }
@@ -277,6 +286,37 @@ void EEPROMPartner::storedDataFromNetwork(const Package* data)
             mDataPreferences.begin("ssid_password", false);
             mDataPreferences.putString("ssid", mSsid.c_str());
             mDataPreferences.putString("password", mPassword.c_str());
+            mDataPreferences.end();
+        }
+    }
+}
+
+void EEPROMPartner::storeDataFromSeverFirebase(const Package* data)
+{
+    if(data == nullptr) {
+        LOGE("Data from Server Firebase is null.");
+        return;
+    }
+    else {
+        LOGW("6666666");
+        const int32_t size = data->getSize();
+        LOGW("77777");
+        const int32_t* value = data->getPackage();
+        LOGW("888888");
+        if(size <= 0) {
+            LOGE("Length is invalid");
+            return;
+        }
+        else {
+            LOGW("7777777");
+            mDataPreferences.begin("light_time_data", false);
+            size_t indexLight = static_cast<size_t>(value[0]);
+            for(int8_t i = 0; i < (size - 1); i++)
+            {
+                mMapOfLightOnOffTime.at(i + indexLight).second = value[i + 1];
+                mDataPreferences.putInt(mMapOfLightOnOffTime.at(i + indexLight).first.c_str(), mMapOfLightOnOffTime.at(i + indexLight).second);
+                LOGD("%s : %x",mMapOfLightOnOffTime.at(i + indexLight).first.c_str(), mMapOfLightOnOffTime.at(i + indexLight).second);
+            }
             mDataPreferences.end();
         }
     }

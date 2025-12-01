@@ -11,8 +11,8 @@ void Button::init()
     LOGW("Skip pinMode setup due to NOT_CONNECT_DEVICE is defined");
     return;
   #endif
-  addButton(pinButton_1, SignalType::BTN_PRESS_BTN_1_SIGNAL);
-  addButton(pinButton_2, SignalType::BTN_PRESS_BTN_2_SIGNAL);
+  addButton(BNT_1, SignalType::BTN_PRESS_BTN_1_SIGNAL);
+  addButton(BNT_2, SignalType::BTN_PRESS_BTN_2_SIGNAL);
   // addButton(pinButton_3, SignalType::PRESS_BTN_3_SIGNAL);
 }
 
@@ -42,7 +42,8 @@ void Button::handleSignal(const SignalType& signal, const Package* data)
 
 void Button::addButton(uint8_t pin, SignalType signal)
 {
-  mListButton[pin] = std::make_pair(std::make_pair(0U, std::make_pair(true, true)), signal);
+  mListButton[pin] = ButtonInfo();
+  mListButton[pin].signal = signal;
   pinMode(pin, INPUT_PULLUP);
 }
 
@@ -52,11 +53,12 @@ void Button::listenning()
   static bool comboActive = false;
   static bool comboHandled = false;
 
-  bool btn1Pressed = (digitalRead(pinButton_1) == LOW);
-  bool btn2Pressed = (digitalRead(pinButton_2) == LOW);
-  // bool btn3Pressed = (digitalRead(pinButton_3) == LOW);
+  bool btn1Pressed = (digitalRead(BNT_1) == LOW);
+  bool btn2Pressed = (digitalRead(BNT_2) == LOW);
 
-  // --- CHECK COMBO ---
+  // ==============================
+  //        CHECK COMBO
+  // ==============================
   if (btn1Pressed && btn2Pressed)
   {
     if (!comboActive)
@@ -67,7 +69,6 @@ void Button::listenning()
       LOGI("Combo BTN1+BTN2 started");
     }
 
-    // If hold for 3 seconds and do not handle
     if (!comboHandled && (millis() - comboStartTime >= 3000))
     {
       comboHandled = true;
@@ -75,47 +76,71 @@ void Button::listenning()
       mRML->handleSignal(SignalType::PRESS_BTN_1_2_COMBO_SIGNAL);
     }
 
-    // Stop processing individual button while combo is in progress
-    return;
+    return; // đang combo thì không xử lý nút đơn
   }
   else
   {
-    // reset combo state if released
     comboActive = false;
     comboStartTime = 0;
     comboHandled = false;
   }
 
-  // --- PROCESS SEPARATE BUTTON ONLY IF NO COMBO ---
-  for (auto &button : mListButton)
+  // ==============================
+  //      PROCESS NORMAL BUTTONS
+  // ==============================
+  for (auto &it : mListButton)
   {
-    uint8_t pin = button.first;
-    auto &debounceTime = button.second.first.first;
-    auto &buttonState = button.second.first.second;
-    bool currentState = digitalRead(pin);
+    uint8_t pin = it.first;
+    auto &info = it.second;
 
-    if (currentState != buttonState.second)
-    {
-      debounceTime = millis();
-    }
+    bool raw = digitalRead(pin);
 
-    if ((millis() - debounceTime) > DEPAY)
+    // ---------- DEBOUNCE ----------
+    if (raw != info.prevRaw)
+      info.debounceTime = millis();
+
+    if (millis() - info.debounceTime > DEPAY)
     {
-      if (currentState != buttonState.first)
+      // STATE CHANGED
+      if (raw != info.stableState)
       {
-        buttonState.first = currentState;
-        if (buttonState.first == LOW)
+        info.stableState = raw;
+
+        if (raw == LOW)
         {
+          // BUTTON DOWN
+          info.pressStart = millis();
+          info.longPressed = false;
+
           LOGI("Button %d pressed", pin);
-          mRML->handleSignal(button.second.second);
         }
         else
         {
+          // BUTTON UP
+          if (!info.longPressed)
+          {
+            LOGI("Button %d short press", pin);
+            mRML->handleSignal(info.signal);
+          }
+
           LOGI("Button %d released", pin);
         }
       }
     }
-    buttonState.second = currentState;
+
+    // ---------- LONG PRESS 3s ----------
+    if (info.stableState == LOW && !info.longPressed)
+    {
+      if (millis() - info.pressStart >= 3000)
+      {
+        info.longPressed = true;
+        LOGI("Button %d long press 3s", pin);
+
+        // Nếu cần signal long-press riêng:
+        // mRML->handleSignal(SignalType::LONG_PRESS_SIGNAL);
+      }
+    }
+
+    info.prevRaw = raw;
   }
 }
-

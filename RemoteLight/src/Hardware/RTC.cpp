@@ -219,7 +219,7 @@ void RTC::handleSignal(const SignalType &signal, const Package *data)
 		case SignalType::WEB_SET_LIGHT3_DATA_REQUEST:
 		case SignalType::WEB_SET_LIGHT4_DATA_REQUEST:
 		{
-			requestSetLightData(data, signal);
+			requestSetLightData(data);
 			break;
 		}
 		case SignalType::NETWORK_SEND_TIME_DATE_FROM_NTP:
@@ -930,36 +930,25 @@ void RTC::sendLightDataToWeb(const SignalType signal)
     // mRML->handleSignal(mLightGetRequestResponse[signal].second, packData.get());
 }
 
-void RTC::requestSetLightData(const Package *data, const SignalType &signal)
+void RTC::requestSetLightData(const Package *data)
 {
-	if (data->getSize() == 9U)
+	if(data == nullptr)
+	{
+        LOGE("Data from Network is null.");
+        return;
+    }
+    else
 	{
 		const int32_t *parseData = data->getPackage();
-		const int32_t order = mLightSetRequestResponse[signal].first;
-		mTimeOfLight[LISTLIGHT[order]].first.sw = parseData[1];
-		mTimeOfLight[LISTLIGHT[order]].first.hour = parseData[2];
-		mTimeOfLight[LISTLIGHT[order]].first.minute = parseData[3];
-		mTimeOfLight[LISTLIGHT[order]].first.second = parseData[4];
-		mTimeOfLight[LISTLIGHT[order]].second.sw = parseData[5];
-		mTimeOfLight[LISTLIGHT[order]].second.hour = parseData[6];
-		mTimeOfLight[LISTLIGHT[order]].second.minute = parseData[7];
-		mTimeOfLight[LISTLIGHT[order]].second.second = parseData[8];
-
-		int32_t result = false;
-		// result = setTimeLight(LISTLIGHT[order], mTimeOfLight[LISTLIGHT[order]].first.second, mTimeOfLight[LISTLIGHT[order]].first.first)
-		// 	   & setTimeLight(LISTLIGHT[order], mTimeOfLight[LISTLIGHT[order]].second.second, mTimeOfLight[LISTLIGHT[order]].second.first);
-		if (result)
-		{
-			// mRML->handleSignal(mLightSetRequestResponse[signal].second);
-		}
-		else
-		{
-			LOGE("setTimeLight LIGHT %d is incomplete!!!", order);
-		}
-	}
-	else
-	{
-		LOGE("Lenght is invalid!!!");
+		const int32_t order 							= parseData[0];
+		mTimeOfLight[LISTLIGHT[order]].first.sw 		= parseData[1];
+		mTimeOfLight[LISTLIGHT[order]].first.hour 		= parseData[2];
+		mTimeOfLight[LISTLIGHT[order]].first.minute 	= parseData[3];
+		mTimeOfLight[LISTLIGHT[order]].first.second 	= parseData[4];
+		mTimeOfLight[LISTLIGHT[order]].second.sw 		= parseData[5];
+		mTimeOfLight[LISTLIGHT[order]].second.hour 		= parseData[6];
+		mTimeOfLight[LISTLIGHT[order]].second.minute 	= parseData[7];
+		mTimeOfLight[LISTLIGHT[order]].second.second 	= parseData[8];
 	}
 }
 

@@ -2,29 +2,32 @@
 
 Light::Light(std::shared_ptr<RemoteLight> rml) : mRML(rml)
 {
-	mListLight[Light1] = HIGH;
-	mListLight[Light2] = HIGH;
-	mListLight[Light3] = HIGH;
-	mListLight[Light4] = HIGH;
+	mListLight[LIGHT_1] = HIGH;
+	mListLight[LIGHT_2] = HIGH;
+	mListLight[LIGHT_3] = HIGH;
+	mListLight[LIGHT_4] = HIGH;
+	mListLight[LED_BTN_RST] = LOW;
+	mListLight[LED_BTN_1] = LOW;
+	mListLight[LED_BTN_2] = LOW;
 
-	mSignalLightMap[SignalType::IR_BTN_1_SIGNAL] 						= Light1;
-	mSignalLightMap[SignalType::BTN_PRESS_BTN_1_SIGNAL] 					= Light1;
-	mSignalLightMap[SignalType::RTC_TURN_ON_LIGHT1] 					= Light1;
-	mSignalLightMap[SignalType::RTC_TURN_OFF_LIGHT1] 					= Light1;
-	mSignalLightMap[SignalType::IR_BTN_2_SIGNAL] 						= Light2;
-	mSignalLightMap[SignalType::BTN_PRESS_BTN_2_SIGNAL] 					= Light2;
-	mSignalLightMap[SignalType::RTC_TURN_ON_LIGHT2] 					= Light2;
-	mSignalLightMap[SignalType::RTC_TURN_OFF_LIGHT2] 					= Light2;
-	mSignalLightMap[SignalType::IR_BTN_3_SIGNAL] 						= Light3;
-	mSignalLightMap[SignalType::RTC_TURN_ON_LIGHT3] 					= Light3;
-	mSignalLightMap[SignalType::RTC_TURN_OFF_LIGHT3] 					= Light3;
-	mSignalLightMap[SignalType::IR_BTN_4_SIGNAL] 						= Light4;
-	mSignalLightMap[SignalType::RTC_TURN_ON_LIGHT4] 					= Light4;
-	mSignalLightMap[SignalType::RTC_TURN_OFF_LIGHT4] 					= Light4;
-	mSignalLightMap[SignalType::WEB_SET_STATUS_LIGHT1_DATA_REQUEST] 	= Light1;
-	mSignalLightMap[SignalType::WEB_SET_STATUS_LIGHT2_DATA_REQUEST] 	= Light2;
-	mSignalLightMap[SignalType::WEB_SET_STATUS_LIGHT3_DATA_REQUEST] 	= Light3;
-	mSignalLightMap[SignalType::WEB_SET_STATUS_LIGHT4_DATA_REQUEST] 	= Light4;
+	mSignalLightMap[SignalType::IR_BTN_1_SIGNAL] 						= LIGHT_1;
+	mSignalLightMap[SignalType::BTN_PRESS_BTN_1_SIGNAL] 				= LIGHT_1;
+	mSignalLightMap[SignalType::RTC_TURN_ON_LIGHT1] 					= LIGHT_1;
+	mSignalLightMap[SignalType::RTC_TURN_OFF_LIGHT1] 					= LIGHT_1;
+	mSignalLightMap[SignalType::IR_BTN_2_SIGNAL] 						= LIGHT_2;
+	mSignalLightMap[SignalType::BTN_PRESS_BTN_2_SIGNAL] 				= LIGHT_2;
+	mSignalLightMap[SignalType::RTC_TURN_ON_LIGHT2] 					= LIGHT_2;
+	mSignalLightMap[SignalType::RTC_TURN_OFF_LIGHT2] 					= LIGHT_2;
+	mSignalLightMap[SignalType::IR_BTN_3_SIGNAL] 						= LIGHT_3;
+	mSignalLightMap[SignalType::RTC_TURN_ON_LIGHT3] 					= LIGHT_3;
+	mSignalLightMap[SignalType::RTC_TURN_OFF_LIGHT3] 					= LIGHT_3;
+	mSignalLightMap[SignalType::IR_BTN_4_SIGNAL] 						= LIGHT_4;
+	mSignalLightMap[SignalType::RTC_TURN_ON_LIGHT4] 					= LIGHT_4;
+	mSignalLightMap[SignalType::RTC_TURN_OFF_LIGHT4] 					= LIGHT_4;
+	mSignalLightMap[SignalType::WEB_SET_STATUS_LIGHT1_DATA_REQUEST] 	= LIGHT_1;
+	mSignalLightMap[SignalType::WEB_SET_STATUS_LIGHT2_DATA_REQUEST] 	= LIGHT_2;
+	mSignalLightMap[SignalType::WEB_SET_STATUS_LIGHT3_DATA_REQUEST] 	= LIGHT_3;
+	mSignalLightMap[SignalType::WEB_SET_STATUS_LIGHT4_DATA_REQUEST] 	= LIGHT_4;
 
 	std::map<uint8_t, bool>::iterator it;
 	#if NOT_CONNECT_DEVICE
@@ -146,10 +149,10 @@ void Light::controlLight(uint8_t light, uint8_t state)
 void Light::sendLightStatusToWeb()
 {
 	std::vector<int32_t> vecData = {
-		static_cast<int32_t>(!(mListLight[Light1])),
-		static_cast<int32_t>(!(mListLight[Light2])),
-		static_cast<int32_t>(!(mListLight[Light3])),
-		static_cast<int32_t>(!(mListLight[Light4]))
+		static_cast<int32_t>(!(mListLight[LIGHT_1])),
+		static_cast<int32_t>(!(mListLight[LIGHT_2])),
+		static_cast<int32_t>(!(mListLight[LIGHT_3])),
+		static_cast<int32_t>(!(mListLight[LIGHT_4]))
 	};
 	std::unique_ptr<Package> packData = std::make_unique<Package>(vecData);
 	mRML->handleSignal(SignalType::WEB_GET_STATUS_DATA_RESPONSE, packData.get());

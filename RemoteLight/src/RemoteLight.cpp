@@ -31,7 +31,6 @@ void RemoteLight::init()
 	mLCD 		= std::make_shared<LCD16x2>(shared_from_this());
 	mBTN 		= std::make_shared<Button>(shared_from_this());
 	mLIGHT 		= std::make_shared<Light>(shared_from_this());
-	// mBluetooth 	= std::make_shared<BluetoothPartner>(shared_from_this());
 	mNetwork 	= std::make_shared<Network>(shared_from_this());
 
 	mTasks = std::make_shared<Tasks>(shared_from_this(), mLCD, mRTC, mIR, mNetwork);
@@ -66,7 +65,7 @@ void RemoteLight::init()
 void RemoteLight::run()
 {
 	// mIR->listenning();
-	// mBTN->listenning();
+	mBTN->listenning();
 	mSerial->listenning();
 	handleControlMode();
 	handleTimeout();
@@ -174,13 +173,19 @@ void RemoteLight::handleSignal(const SignalType signal, Package *data)
 		break;
 	}
 	case (SignalType::WEB_SET_ALLTIME_DATA_REQUEST):
+	case (SignalType::NETWORK_SEND_TIME_DATE_FROM_NTP):
+	case (SignalType::RTC_GET_LIGHT_ON_OFF_DATA):
+	{
+		mRTC->handleSignal(signal, data);
+		break;
+	}
 	case (SignalType::WEB_SET_LIGHT1_DATA_REQUEST):
 	case (SignalType::WEB_SET_LIGHT2_DATA_REQUEST):
 	case (SignalType::WEB_SET_LIGHT3_DATA_REQUEST):
 	case (SignalType::WEB_SET_LIGHT4_DATA_REQUEST):
-	case (SignalType::NETWORK_SEND_TIME_DATE_FROM_NTP):
-	case (SignalType::RTC_GET_LIGHT_ON_OFF_DATA):
 	{
+		LOGW("4444");
+		mEEPROM->handleSignal(signal, data);
 		mRTC->handleSignal(signal, data);
 		break;
 	}
@@ -191,6 +196,7 @@ void RemoteLight::handleSignal(const SignalType signal, Package *data)
 	case (SignalType::WEB_SET_STATUS_LIGHT_DATA_RESPONSE):
 	case (SignalType::NETWORK_GET_TIME_DATE_FROM_NTP):
 	case (SignalType::PRESS_BTN_1_2_COMBO_SIGNAL):
+	case (SignalType::NETWORK_UPLOAD_DATA_TO_FIREBASE):
 	{
 		if(PRESS_BTN_1_2_COMBO_SIGNAL == signal)
 		{
@@ -228,29 +234,23 @@ void RemoteLight::handleSignal(const SignalType signal, Package *data)
 		mEEPROM->handleSignal(signal);
 		break;
 	}
+	case (SignalType::REMOTE_LIGHT_REMOVE_CONNECT_WIFI_MODE):
 	case (SignalType::REMOTE_LIGHT_REMOVE_WIFI_PROVISIONING_MODE): {
 		mTimerConnectWifi->updateTimer([this]()
-										{ this->onTimeout(SignalType::TIMER_CONNECT_FIREBASE_SIGNAL); }, DELAY_1S);
+										{ this->onTimeout(SignalType::REMOTE_LIGHT_CONNECT_FIREBASE); }, DELAY_5S);
 		mTimerConnectWifi->startTimer();
-		setControlMode(CONTROL_MODE::CHECK_CONNECT_FIREBASE);
 		break;
 	}
 	case (SignalType::REMOTE_LIGHT_REMOVE_CONNECT_FIREBASE_MODE): {
-		mTimerConnectWifi->stopTimer();
 		mTimerConnectWifi->updateTimer([this]()
-										{ this->onTimeout(SignalType::TIMER_CONNECT_NTP_SIGNAL); }, DELAY_1S);
+										{ this->onTimeout(SignalType::TIMER_DEPAY_CONNECT_FIREBASE_FAILED_SUCCESS); }, DELAY_5S);
 		mTimerConnectWifi->startTimer();
-		setControlMode(CONTROL_MODE::CHECK_CONNECT_NTP);
 		break;
 	}
 	case (SignalType::REMOTE_LIGHT_REMOVE_CONNECT_NTP_MODE): {
-		mTimerConnectWifi->stopTimer();
-		if(mPreviousControlMode == CONTROL_MODE::DISPLAY_ALL)
-		{
-			setControlMode(mPreviousControlMode);
-			mPreviousControlMode = CONTROL_MODE::NONE;
-			mTimerDisplayAll->startTimer();
-		}
+		mTimerConnectWifi->updateTimer([this]()
+											{ this->onTimeout(SignalType::TIMER_DEPAY_CONNECT_NPT_FAILED_SUCCESS); }, DELAY_5S);
+		mTimerConnectWifi->startTimer();
 		break;
 	}
 	case (SignalType::REMOTE_LIGHT_REMOVE_DISPLAY_ALL_TIME_MODE): {
@@ -293,17 +293,28 @@ void RemoteLight::handleSignal(const SignalType signal, Package *data)
 		break;
 	}
 	case (SignalType::REMOTE_LIGHT_DISPLAY_ALLTIME):
-	case (SignalType::REMOTE_LIGHT_TIMER_CONNECT_NTP_TIMEOUT):
-	case (SignalType::REMOTE_LIGHT_TIMER_CONNECT_WIFI_TIMEOUT):
 	{
 		setControlMode(CONTROL_MODE::DISPLAY_ALL);
 		break;
 	}
+	case (SignalType::REMOTE_LIGHT_TIMER_CONNECT_WIFI_TIMEOUT):
+	{
+		mTimerConnectWifi->updateTimer([this]()
+											{ this->onTimeout(SignalType::TIMER_DEPAY_CONNECT_WIFI_FAILED_SUCCESS); }, DELAY_5S);
+		mTimerConnectWifi->startTimer();
+		break;
+	}
+	case (SignalType::REMOTE_LIGHT_TIMER_CONNECT_NTP_TIMEOUT):
+	{
+		mTimerConnectWifi->updateTimer([this]()
+											{ this->onTimeout(SignalType::TIMER_DEPAY_CONNECT_NPT_FAILED_SUCCESS); }, DELAY_5S);
+		mTimerConnectWifi->startTimer();
+		break;
+	}
 	case (SignalType::REMOTE_LIGHT_TIMER_CONNECT_FIREBASE_TIMEOUT): {
 		mTimerConnectWifi->updateTimer([this]()
-											{ this->onTimeout(SignalType::TIMER_CONNECT_NTP_SIGNAL); }, DELAY_1S);
+											{ this->onTimeout(SignalType::TIMER_DEPAY_CONNECT_FIREBASE_FAILED_SUCCESS); }, DELAY_5S);
 		mTimerConnectWifi->startTimer();
-		setControlMode(CONTROL_MODE::CHECK_CONNECT_NTP);
 		break;
 	}
 	case (SignalType::REMOTE_LIGHT_TIMER_DISPLAY_ALLLTIME_START): {
@@ -314,6 +325,16 @@ void RemoteLight::handleSignal(const SignalType signal, Package *data)
 		mTimerConnectWifi->updateTimer([this]()
 											{ this->onTimeout(SignalType::TIMER_CONNECT_WIFI_FAILED_EMPTY_SSID_PASSWORD_SIGNAL); }, DELAY_5S);
 		mTimerConnectWifi->startTimer();
+		break;
+	}
+	case (SignalType::REMOTE_LIGHT_UPDATE_TIMER_CONNECT_FIREBASE): {
+		mTimerConnectWifi->updateTimer([this]()
+										{ this->onTimeout(SignalType::TIMER_CONNECT_FIREBASE_SIGNAL); }, DELAY_1S);
+		break;
+	}
+	case (SignalType::REMOTE_LIGHT_UPDATE_TIMER_CONNECT_NTP): {
+		mTimerConnectWifi->updateTimer([this]()
+										{ this->onTimeout(SignalType::TIMER_CONNECT_NTP_SIGNAL); }, DELAY_1S);
 		break;
 	}
 	default: {
@@ -340,7 +361,11 @@ void RemoteLight::onTimeout(const SignalType signal)
 	case SignalType::TIMER_DISPLAY_ALL_END_SETUP_MODE_SIGNAL:
 	case SignalType::TIMER_DISPLAY_ALL_SETUP_MODE_SIGNAL:
 	case SignalType::TIMER_DISPLAY_TEMP_PRESS_SIGNAL:
-	case SignalType::TIMER_CONNECT_WIFI_FAILED_EMPTY_SSID_PASSWORD_SIGNAL: {
+	case SignalType::TIMER_CONNECT_WIFI_FAILED_EMPTY_SSID_PASSWORD_SIGNAL:
+	case SignalType::TIMER_DEPAY_CONNECT_FIREBASE_FAILED_SUCCESS:
+	case SignalType::TIMER_DEPAY_CONNECT_NPT_FAILED_SUCCESS:
+	case SignalType::TIMER_DEPAY_CONNECT_WIFI_FAILED_SUCCESS:
+	case SignalType::REMOTE_LIGHT_CONNECT_FIREBASE: {
 		setFlagTimeout(signal);
 		break;
 	}
@@ -357,7 +382,7 @@ void RemoteLight::setControlMode(const CONTROL_MODE state)
 {
 	std::unique_lock<std::mutex> lock(mMutexControlMode);
 	mControlMode = state;
-	if (mPreviousControlMode == CONTROL_MODE::NONE && state == CONTROL_MODE::DISPLAY_ALL) {
+	if (state != CONTROL_MODE::NONE && state != mPreviousControlMode) {
         mPreviousControlMode = state;
     }
 }
@@ -384,6 +409,7 @@ void RemoteLight::handleControlMode() {
 		if(mControlModeSignalMap.find(modeCurrent) != mControlModeSignalMap.end()) {
 			LOGI("Task: %s", SIGNALTOSTRING(mControlModeSignalMap.at(modeCurrent)).c_str());
 			mTasks->handleSignal(mControlModeSignalMap.at(modeCurrent));
+			LOGD("mPreviousControlMode: %s", SIGNALTOSTRING(mControlModeSignalMap.at(mPreviousControlMode)).c_str());
 		}
 		else {
 			LOGW("Task is not supported yet.");
@@ -410,7 +436,7 @@ void RemoteLight::handleTimeout()
 		case SignalType::TIMER_CONNECT_NTP_SUCCESS_GOTO_NEXT_CONNECT:
 		case SignalType::TIMER_CONNECT_NTP_FAILED_GOTO_NEXT_CONNECT:
 		case SignalType::TIMER_DISPLAY_ALL_TIME_SIGNAL:
-		case SignalType::TIMER_DISPLAY_ALL_END_SETUP_MODE_SIGNAL:{
+		case SignalType::TIMER_DISPLAY_ALL_END_SETUP_MODE_SIGNAL: {
 			mTasks->handleSignal(mFlagTimeout);
 			break;
 		}
@@ -423,9 +449,25 @@ void RemoteLight::handleTimeout()
 			break;
 		}
 		case SignalType::TIMER_CONNECT_WIFI_FAILED_EMPTY_SSID_PASSWORD_SIGNAL: {
-			if (mControlMode != CONTROL_MODE::WIFI_PROVISIONING_MODE) {
-				handleSignal(SignalType::REMOTE_LIGHT_TIMER_CONNECT_WIFI_TIMEOUT);
+			if (mPreviousControlMode == CONTROL_MODE::CHECK_CONNECT_WIFI) {
+				handleSignal(SignalType::REMOTE_LIGHT_DISPLAY_ALLTIME);
 			}
+			break;
+		}
+		case SignalType::TIMER_DEPAY_CONNECT_WIFI_FAILED_SUCCESS: {
+			handleSignal(SignalType::REMOTE_LIGHT_DISPLAY_ALLTIME);
+			break;
+		}
+		case SignalType::TIMER_DEPAY_CONNECT_FIREBASE_FAILED_SUCCESS: {
+			handleSignal(SignalType::REMOTE_LIGHT_CONNECT_NTP);
+			break;
+		}
+		case SignalType::TIMER_DEPAY_CONNECT_NPT_FAILED_SUCCESS: {
+			handleSignal(SignalType::IR_INSTALL_BUTTON_COMPLETE);
+			break;
+		}
+		case SignalType::REMOTE_LIGHT_CONNECT_FIREBASE: {
+			handleSignal(SignalType::REMOTE_LIGHT_CONNECT_FIREBASE);
 			break;
 		}
 		default:

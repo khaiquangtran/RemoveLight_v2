@@ -38,59 +38,37 @@ private:
     WiFiUDP ntpUDP;
     NTPClient *mTimeClient;
     bool mStatusProvision;
+    bool mEnableCheckConnectWIFI;
 
     void signUp();
     void connectWifi();
     void checkConnectNTP();
-    void checkCommandFirebase();
-    void sendAllTimeDatatoWeb(const Package *data);
-    void sendLightDataToWeb(const Package *data, int32_t lightIndex);
-    void sendLightStatusToWeb(const Package *data);
-    void sendResponseSetLightDatatoWeb();
     void getTimeDataFromNtp();
-    void setCommandIsIdle();
     void processComboBtnPress();
     static void SysProvEvent(arduino_event_t *sys_event);
     void getSSIDAndPasswordFromEEPROM(const Package *data);
+    void uploadDataToFirebase();
 
     int8_t mCommandAllTimerFlag;
 
-    const std::array<String, 8U> ALLTIME_PATH = {
-        "allTime/command",  "allTime/data/hour", "allTime/data/minute", "allTime/data/second",
-        "allTime/data/day", "allTime/data/date", "allTime/data/month",  "allTime/data/year"
+    const std::string FLAG_PATH = "flagCommand/";
+    const std::array<String, 4U> HEAD_PATH = {
+        "light1", "light2", "light3", "light4",
     };
-    const std::array<String, 6U> LIGHT_PATHS = {
-        "allTime", "light1", "light2", "light3", "light4", "status"
-    };
-    const std::array<String, 13U> DATA_PATHS = { "/command",
-        "/data/swOn",  "/data/hourOn",  "/data/minuteOn",  "/data/secondOn",
-        "/data/swOff", "/data/hourOff", "/data/minuteOff", "/data/secondOff",
-        "/data/light1", "/data/light2", "/data/light3", "/data/light4",
+    const std::array<String, 8U> DATA_PATHS = {
+        "/swOn",  "/hourOn",  "/minuteOn",  "/secondOn",
+        "/swOff", "/hourOff", "/minuteOff", "/secondOff",
     };
 
     enum REQUEST_FB : int32_t
     {
-        SENT_INFORM = 0,
-        IDLE,
-        GETTING_ALLTIME_DATA,
-        SETTING_ALLTIME_DATA,
-        GETTING_LIGHT1_DATA,
-        SETTING_LIGHT1_DATA,
-        GETTING_LIGHT2_DATA,
-        SETTING_LIGHT2_DATA,
-        GETTING_LIGHT3_DATA,
-        SETTING_LIGHT3_DATA,
-        GETTING_LIGHT4_DATA,
-        SETTING_LIGHT4_DATA,
-        GETTING_ALL_STATUS,
-        SETTING_LIGHT1_STATUS,
-        SETTING_LIGHT2_STATUS,
-        SETTING_LIGHT3_STATUS,
-        SETTING_LIGHT4_STATUS,
-        REQUEST_END,
+        NONE = 0,
+        SET_INFORM,
+        RECEIVED_INFORM,
+        UPLOAD_INFORM,
     };
-    std::map<REQUEST_FB, std::pair<SignalType, int32_t>> mRequestSignalMap;
     std::map<SignalType, int32_t> mSignalLightMap;
+    std::map<int32_t, SignalType> mSettingDataLightMap;
 
     const char * POP = "light1234"; // Proof of possession - otherwise called a PIN - string provided by the device, entered by the user in the phone app
     const char * SERVICE_NAME = "ESP32_LIGHT"; // Name of your device (the Espressif apps expects by default device name starting with "Prov_")

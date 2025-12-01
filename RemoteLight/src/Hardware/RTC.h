@@ -41,7 +41,7 @@ private:
 	void checkConfigureTimeForLight();
 	void requestSetTimeAllData(const Package* data);
 	void sendLightDataToWeb(const SignalType signal);
-	void requestSetLightData(const Package* data, const SignalType& signal);
+	void requestSetLightData(const Package* data);
 	void receiveTimeDateFromNTP(const Package *data);
 	void adjustTime();
 	void updateTimeForRTC();

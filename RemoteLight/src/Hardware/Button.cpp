@@ -66,13 +66,13 @@ void Button::listenning()
       comboActive = true;
       comboStartTime = millis();
       comboHandled = false;
-      LOGI("Combo BTN1+BTN2 started");
+      LOGD("Combo BTN1+BTN2 started");
     }
 
     if (!comboHandled && (millis() - comboStartTime >= 3000))
     {
       comboHandled = true;
-      LOGI("BTN1 + BTN2 held for 3s -> trigger combo!");
+      LOGD("BTN1 + BTN2 held for 3s -> trigger combo!");
       mRML->handleSignal(SignalType::PRESS_BTN_1_2_COMBO_SIGNAL);
     }
 
@@ -112,18 +112,18 @@ void Button::listenning()
           info.pressStart = millis();
           info.longPressed = false;
 
-          LOGI("Button %d pressed", pin);
+          LOGD("Button %d pressed", pin);
         }
         else
         {
           // BUTTON UP
           if (!info.longPressed)
           {
-            LOGI("Button %d short press", pin);
+            LOGD("Button %d short press", pin);
             mRML->handleSignal(info.signal);
           }
 
-          LOGI("Button %d released", pin);
+          LOGD("Button %d released", pin);
         }
       }
     }
@@ -134,7 +134,7 @@ void Button::listenning()
       if (millis() - info.pressStart >= 3000)
       {
         info.longPressed = true;
-        LOGI("Button %d long press 3s", pin);
+        LOGD("Button %d long press 3s", pin);
 
         // Nếu cần signal long-press riêng:
         // mRML->handleSignal(SignalType::LONG_PRESS_SIGNAL);

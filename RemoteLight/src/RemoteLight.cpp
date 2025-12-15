@@ -184,7 +184,6 @@ void RemoteLight::handleSignal(const SignalType signal, Package *data)
 	case (SignalType::WEB_SET_LIGHT3_DATA_REQUEST):
 	case (SignalType::WEB_SET_LIGHT4_DATA_REQUEST):
 	{
-		LOGW("4444");
 		mEEPROM->handleSignal(signal, data);
 		mRTC->handleSignal(signal, data);
 		break;

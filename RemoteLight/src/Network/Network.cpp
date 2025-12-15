@@ -171,24 +171,20 @@ void Network::uploadDataToFirebase() {
         std::string flagPath = FLAG_PATH + std::string(it->c_str());
         if (Firebase.RTDB.getInt(&mFbdo, flagPath))
         {
-            LOGW("111");
             REQUEST_FB flag = static_cast<REQUEST_FB>(mFbdo.intData());
             if (flag == REQUEST_FB::SET_INFORM)
             {
-                LOGW("111");
-                std::vector<int32_t> vecData(9, 0);
+                std::vector<int32_t> vecData;
                 int32_t index = std::distance(HEAD_PATH.begin(), it);
-                std::unique_ptr<Package> package = std::make_unique<Package>(vecData);
-                LOGW("Index: %d", index);
+                LOGD("Index: %d", index);
                 vecData.push_back(static_cast<int32_t>(index));
                 index++;
                 for (std::array<String, 8U>::const_iterator dataIt = DATA_PATHS.begin(); dataIt != DATA_PATHS.end(); ++dataIt)
                 {
                     std::string path = std::string(it->c_str()) + std::string(dataIt->c_str());
-                    LOGW("Path: %s", path.c_str());
+                    LOGD("Path: %s", path.c_str());
                     if (Firebase.RTDB.getInt(&mFbdo, path))
                     {
-                        LOGW("data: %d", mFbdo.intData());
                         vecData.push_back(static_cast<int32_t>(mFbdo.intData()));
                     }
                     else
@@ -197,11 +193,11 @@ void Network::uploadDataToFirebase() {
                         return;
                     }
                 }
+
                 if (mSettingDataLightMap.find(index) != mSettingDataLightMap.end())
                 {
-                    LOGW("222");
-                    // mRML->handleSignal(mSettingDataLightMap.at(index), package.get());
-                    LOGW("333");
+                    std::unique_ptr<Package> package = std::make_unique<Package>(vecData);
+                    mRML->handleSignal(mSettingDataLightMap.at(index), package.get());
                     // Set flag received inform
                     if (Firebase.RTDB.setInt(&mFbdo, flagPath.c_str(), static_cast<int32_t>(REQUEST_FB::RECEIVED_INFORM)))
                     {

@@ -39,7 +39,7 @@ void Timer::stopTimer()
     mClear.store(true);
     //  Ensure previous task stops
     // #ifdef ARDUINO
-    //     delay(mDuration.load() - getElapsedTime() + 10);
+        delay(mDuration.load() - getElapsedTime() + 10);
     // #else
     //     std::this_thread::sleep_for(std::chrono::milliseconds(mDuration.load() - getElapsedTime() + 10));
     // #endif

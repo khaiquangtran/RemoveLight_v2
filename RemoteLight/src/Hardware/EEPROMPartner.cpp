@@ -21,41 +21,41 @@ EEPROMPartner::EEPROMPartner(std::shared_ptr<RemoteLight> rml) : mRML (rml)
     };
 
     mMapOfLightOnOffTime = {
-        {0,   std::make_pair("Light_1_SW_ON",        0)},
-        {1,   std::make_pair("Light_1_HOUR_ON",      0)},
-        {2,   std::make_pair("Light_1_MINUTE_ON",    0)},
-        {3,   std::make_pair("Light_1_SECOND_ON",    0)},
-        {4,   std::make_pair("Light_1_SW_OFF",       0)},
-        {5,   std::make_pair("Light_1_HOUR_OFF",     0)},
-        {6,   std::make_pair("Light_1_MINUTE_OFF",   0)},
-        {7,   std::make_pair("Light_1_SECOND_OFF",   0)},
+        {0,   std::make_pair("L1_SW_ON",     0)},
+        {1,   std::make_pair("L1_HR_ON",     0)},
+        {2,   std::make_pair("L1_MIN_ON",    0)},
+        {3,   std::make_pair("L1_SEC_ON",    0)},
+        {4,   std::make_pair("L1_SW_OFF",    0)},
+        {5,   std::make_pair("L1_HR_OFF",    0)},
+        {6,   std::make_pair("L1_MIN_OFF",   0)},
+        {7,   std::make_pair("L1_SEC_OFF",   0)},
         /*--------------------------------------------*/
-        {8,   std::make_pair("Light_2_SW_ON",        0)},
-        {9,   std::make_pair("Light_2_HOUR_ON",      0)},
-        {10,  std::make_pair("Light_2_MINUTE_ON",    0)},
-        {11,  std::make_pair("Light_2_SECOND_ON",    0)},
-        {12,  std::make_pair("Light_2_SW_OFF",       0)},
-        {13,  std::make_pair("Light_2_HOUR_OFF",     0)},
-        {14,  std::make_pair("Light_2_MINUTE_OFF",   0)},
-        {15,  std::make_pair("Light_2_SECOND_OFF",   0)},
+        {8,   std::make_pair("L2_SW_ON",     0)},
+        {9,   std::make_pair("L2_HR_ON",     0)},
+        {10,  std::make_pair("L2_MIN_ON",    0)},
+        {11,  std::make_pair("L2_SEC_ON",    0)},
+        {12,  std::make_pair("L2_SW_OFF",    0)},
+        {13,  std::make_pair("L2_HR_OFF",    0)},
+        {14,  std::make_pair("L2_MIN_OFF",   0)},
+        {15,  std::make_pair("L2_SEC_OFF",   0)},
         /*--------------------------------------------*/
-        {16,  std::make_pair("Light_3_SW_ON",        0)},
-        {17,  std::make_pair("Light_3_HOUR_ON",      0)},
-        {18,  std::make_pair("Light_3_MINUTE_ON",    0)},
-        {19,  std::make_pair("Light_3_SECOND_ON",    0)},
-        {20,  std::make_pair("Light_3_SW_OFF",       0)},
-        {21,  std::make_pair("Light_3_HOUR_OFF",     0)},
-        {22,  std::make_pair("Light_3_MINUTE_OFF",   0)},
-        {23,  std::make_pair("Light_3_SECOND_OFF",   0)},
+        {16,  std::make_pair("L3_SW_ON",     0)},
+        {17,  std::make_pair("L3_HR_ON",     0)},
+        {18,  std::make_pair("L3_MIN_ON",    0)},
+        {19,  std::make_pair("L3_SEC_ON",    0)},
+        {20,  std::make_pair("L3_SW_OFF",    0)},
+        {21,  std::make_pair("L3_HR_OFF",    0)},
+        {22,  std::make_pair("L3_MIN_OFF",   0)},
+        {23,  std::make_pair("L3_SEC_OFF",   0)},
         /*--------------------------------------------*/
-        {24,  std::make_pair("Light_4_SW_ON",        0)},
-        {25,  std::make_pair("Light_4_HOUR_ON",      0)},
-        {26,  std::make_pair("Light_4_MINUTE_ON",    0)},
-        {27,  std::make_pair("Light_4_SECOND_ON",    0)},
-        {28,  std::make_pair("Light_4_SW_OFF",       0)},
-        {29,  std::make_pair("Light_4_HOUR_OFF",     0)},
-        {30,  std::make_pair("Light_4_MINUTE_OFF",   0)},
-        {31,  std::make_pair("Light_4_SECOND_OFF",   0)},
+        {24,  std::make_pair("L4_SW_ON",     0)},
+        {25,  std::make_pair("L4_HR_ON",     0)},
+        {26,  std::make_pair("L4_MIN_ON",    0)},
+        {27,  std::make_pair("L4_SEC_ON",    0)},
+        {28,  std::make_pair("L4_SW_OFF",    0)},
+        {29,  std::make_pair("L4_HR_OFF",    0)},
+        {30,  std::make_pair("L4_MIN_OFF",   0)},
+        {31,  std::make_pair("L4_SEC_OFF",   0)},
     };
     LOGI(" =========== EEPROMPartner =========== ");
 }
@@ -84,7 +84,7 @@ void EEPROMPartner::init()
 
     for(int8_t i = 0; i < mMapOfLightOnOffTime.size(); i++)
     {
-        LOGD("%s : %x",mMapOfLightOnOffTime.at(i).first.c_str(), mMapOfLightOnOffTime.at(i).second);
+        LOGD("%s : %d",mMapOfLightOnOffTime.at(i).first.c_str(), mMapOfLightOnOffTime.at(i).second);
     }
 
     mDataPreferences.begin("ssid_password", false);
@@ -190,7 +190,6 @@ void EEPROMPartner::handleSignal(const SignalType& signal, const Package* data)
     case SignalType::WEB_SET_LIGHT3_DATA_REQUEST:
     case SignalType::WEB_SET_LIGHT4_DATA_REQUEST:
     {
-        LOGW("5555555");
         storeDataFromSeverFirebase(data);
         break;
     }
@@ -298,24 +297,23 @@ void EEPROMPartner::storeDataFromSeverFirebase(const Package* data)
         return;
     }
     else {
-        LOGW("6666666");
         const int32_t size = data->getSize();
-        LOGW("77777");
         const int32_t* value = data->getPackage();
-        LOGW("888888");
+        for(int i = 0; i < size; i++) {
+            LOGD("Data[%d]: %d", i, value[i]);
+        }
         if(size <= 0) {
             LOGE("Length is invalid");
             return;
         }
         else {
-            LOGW("7777777");
             mDataPreferences.begin("light_time_data", false);
             size_t indexLight = static_cast<size_t>(value[0]);
             for(int8_t i = 0; i < (size - 1); i++)
             {
                 mMapOfLightOnOffTime.at(i + indexLight).second = value[i + 1];
                 mDataPreferences.putInt(mMapOfLightOnOffTime.at(i + indexLight).first.c_str(), mMapOfLightOnOffTime.at(i + indexLight).second);
-                LOGD("%s : %x",mMapOfLightOnOffTime.at(i + indexLight).first.c_str(), mMapOfLightOnOffTime.at(i + indexLight).second);
+                LOGD("%s : %d",mMapOfLightOnOffTime.at(i + indexLight).first.c_str(), mMapOfLightOnOffTime.at(i + indexLight).second);
             }
             mDataPreferences.end();
         }

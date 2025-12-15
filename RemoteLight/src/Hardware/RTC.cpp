@@ -940,15 +940,24 @@ void RTC::requestSetLightData(const Package *data)
     else
 	{
 		const int32_t *parseData = data->getPackage();
-		const int32_t order 							= parseData[0];
-		mTimeOfLight[LISTLIGHT[order]].first.sw 		= parseData[1];
-		mTimeOfLight[LISTLIGHT[order]].first.hour 		= parseData[2];
-		mTimeOfLight[LISTLIGHT[order]].first.minute 	= parseData[3];
-		mTimeOfLight[LISTLIGHT[order]].first.second 	= parseData[4];
-		mTimeOfLight[LISTLIGHT[order]].second.sw 		= parseData[5];
-		mTimeOfLight[LISTLIGHT[order]].second.hour 		= parseData[6];
-		mTimeOfLight[LISTLIGHT[order]].second.minute 	= parseData[7];
-		mTimeOfLight[LISTLIGHT[order]].second.second 	= parseData[8];
+		const int32_t index 							= parseData[0];
+		mTimeOfLight[LISTLIGHT[index]].first.sw 		= parseData[1];
+		mTimeOfLight[LISTLIGHT[index]].first.hour 		= parseData[2];
+		mTimeOfLight[LISTLIGHT[index]].first.minute 	= parseData[3];
+		mTimeOfLight[LISTLIGHT[index]].first.second 	= parseData[4];
+		mTimeOfLight[LISTLIGHT[index]].second.sw 		= parseData[5];
+		mTimeOfLight[LISTLIGHT[index]].second.hour 		= parseData[6];
+		mTimeOfLight[LISTLIGHT[index]].second.minute 	= parseData[7];
+		mTimeOfLight[LISTLIGHT[index]].second.second 	= parseData[8];
+		LOGD("SET LIGHT %s DATA FROM WEB:", LISTLIGHT[index].c_str());
+		LOGD("TIME ON:  %d-%d:%d:%d", mTimeOfLight[LISTLIGHT[index]].first.sw,
+									  mTimeOfLight[LISTLIGHT[index]].first.hour,
+									  mTimeOfLight[LISTLIGHT[index]].first.minute,
+									  mTimeOfLight[LISTLIGHT[index]].first.second);
+		LOGD("TIME OFF: %d-%d:%d:%d", mTimeOfLight[LISTLIGHT[index]].second.sw,
+									  mTimeOfLight[LISTLIGHT[index]].second.hour,
+									  mTimeOfLight[LISTLIGHT[index]].second.minute,
+									  mTimeOfLight[LISTLIGHT[index]].second.second);
 	}
 }
 

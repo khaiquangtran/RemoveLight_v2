@@ -6,9 +6,9 @@ Light::Light(std::shared_ptr<RemoteLight> rml) : mRML(rml)
 	mListLight[LIGHT_2] = HIGH;
 	mListLight[LIGHT_3] = HIGH;
 	mListLight[LIGHT_4] = HIGH;
-	mListLight[LED_BTN_RST] = LOW;
-	mListLight[LED_BTN_1] = LOW;
-	mListLight[LED_BTN_2] = LOW;
+	mListLight[LED_BTN_RST] = HIGH;
+	mListLight[LED_BTN_1] = HIGH;
+	mListLight[LED_BTN_2] = HIGH;
 
 	mSignalLightMap[SignalType::IR_BTN_1_SIGNAL] 						= LIGHT_1;
 	mSignalLightMap[SignalType::BTN_PRESS_BTN_1_SIGNAL] 				= LIGHT_1;

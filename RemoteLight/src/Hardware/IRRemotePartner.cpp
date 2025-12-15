@@ -99,7 +99,7 @@ void IRRemotePartner::listenning()
         }
         else if(mFlagInstallButton == 1) {
           mValueButton = valueIR;
-          std::vector<int32_t> vecData(3, 0);
+          std::vector<int32_t> vecData;
           vecData.push_back(mNumberButton);
           vecData.push_back((mValueButton & 0xFFFF0000) >> 16);
           vecData.push_back((mValueButton & 0xFFFF));
